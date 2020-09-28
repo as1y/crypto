@@ -62,13 +62,28 @@ class UpdateController extends AppController {
 
 
         if (!empty($_GET) && ($_GET['action'] == "updatebanners")){
-
             $Panel->WorkWithBanners($token);
             $Panel->updatecheck("banners");
             echo "<h1>БАННЕРА!</h1>";
         }
 
 
+
+
+        if (!empty($_GET) && ($_GET['action'] == "seopages")){
+
+
+
+
+
+            $PAGES = $Panel->GeneratePages();
+            $Panel->AddPagesinBD($PAGES);
+
+            $Panel->updatecheck("seopages");
+            echo "<h1>SEO страницы обновлены</h1>";
+
+
+        }
 
 
 

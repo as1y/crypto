@@ -9,6 +9,197 @@ class Panel extends \APP\core\base\Model {
     public $wID = CONFIG['ADMITAD']['WID'];
 
 
+
+    public function getSEOPAGES($scripturl){
+
+     return   R::findOne('seopages', 'WHERE `http` =?', [$scripturl]);
+
+    }
+
+
+    public function AddPagesinBD($DATA){
+
+        foreach ($DATA as $val){
+
+            $shop = R::findOne('seopages', 'WHERE `http` =?', [$val['http']]);
+
+            if (empty($shop)){
+                $this->addnewBD('seopages', $val);
+                echo "Добавили страницу ".$val['http']." "."<br>";
+                continue;
+            }
+
+
+            foreach ($val as $name=>$item){
+                 $shop->$name = $item;
+                    echo "Обновили страницу ".$val['http']." "."<br>";
+                    R::store($shop);
+
+                }
+
+
+
+        }
+
+
+
+        return true;
+    }
+
+    public function GeneratePages(){
+
+        $DATA = [];
+
+        $categorycoupons =  R::findall('categorycoupons');
+        $companies =  R::findall('companies');
+
+        // БРЕНД
+        foreach ($companies as $key=>$val){
+
+            $coupons = $val->ownCouponsList;
+            if (empty($coupons)) continue;
+            $couponsid = [];
+            foreach ($val->ownCouponsList as $coupon){
+                $couponsid[] = $coupon['id'];
+            }
+
+
+            $INFO['type'] = "company";
+            $INFO['uri'] = $val['uri'];
+            $INFO['http'] = "https://".CONFIG['DOMAIN']."/promocode/".$val['uri'];
+
+            $INFO['META'] = [
+                'title' => 'Промокоды "'.$val['name'].'" 📌, каталог промокодов и скидок '.APPNAME,
+                'description' => 'Витрина промокодов и скидок '.APPNAME,
+                'keywords' => $val['name'].' промокоды, '.$val['name'].' скидки, '.$val['name'].' акции' ,
+                'H1' => trim($val['name']).' промокоды, скидки, акции, купоны',
+            ];
+            $INFO['META'] = json_encode($INFO['META'] , true);
+
+            unset($BREADCRUMBS);
+            $BREADCRUMBS['HOME'] = ['Label' => "Промокоды", 'Url' => "/promocode/vse/"];
+            $BREADCRUMBS['DATA'][] = ['Label' => trim($val['name'])];
+            $INFO['BREADCRUMBS'] = json_encode($BREADCRUMBS , true);
+
+
+            $INFO['couponsid'] = json_encode($couponsid, true);
+            $INFO['description'] = "";
+            $INFO['selflink'] = "";
+
+            $DATA[] = $INFO;
+        }
+        // БРЕНД
+
+         //КАТЕГОРИИ
+        foreach ($categorycoupons as $key=>$val){
+
+            $coupons = $this->FilterCoupons(['arrCategory' => $val['id'], 'arrType' => ""]);
+            if (empty($coupons)) continue;
+            $couponsid = [];
+            foreach ($coupons as $coupon){
+                $couponsid[] = $coupon['id'];
+            }
+
+
+            $INFO['type'] = "category";
+            $INFO['uri'] = $val['url'];
+            $INFO['http'] = "https://".CONFIG['DOMAIN']."/promocode/vse/".$val['url'];
+
+
+            $INFO['META'] = [
+                'title' => 'Промокоды в разделе '.$val['name'].' 📌, каталог промокодов и скидок '.APPNAME,
+                'description' => 'Витрина промокодов и скидок '.APPNAME,
+                'keywords' => $val['name'].' промокоды, '.$val['name'].' скидки, '.$val['name'].' акции' ,
+                'H1' => ' Промокоды, акции, скидки в разделе "'.$val['name'].'"',
+            ];
+            $INFO['META'] = json_encode($INFO['META'] , true);
+
+            unset($BREADCRUMBS);
+            $BREADCRUMBS['HOME'] = ['Label' => "Промокоды", 'Url' => "/promocode/vse/"];
+            $BREADCRUMBS['DATA'][] = ['Label' => trim($val['name'])];
+            $INFO['BREADCRUMBS'] = json_encode($BREADCRUMBS , true);
+
+
+            $INFO['couponsid'] = json_encode($couponsid, true);
+            $INFO['description'] = "";
+            $INFO['selflink'] = "";
+
+            $DATA[] = $INFO;
+
+
+
+        }
+         //КАТЕГОРИИ
+
+        //БРЕНД + КАТЕГОРИЯ КУПОНА
+        foreach ($companies as $key=>$val){
+
+            // Получаем список купонов
+            $couponslist = $val->ownCouponsList;
+            // Получаем список купонов
+
+            // Берем список категорий у всех купонов
+            $massivcategory = [];
+            foreach ($couponslist as $coupon){
+                $massivcategory =  array_merge ($massivcategory, json_decode($coupon['category'], true));
+            }
+            $massivcategory = array_unique($massivcategory);
+            // Берем список категорий у всех купонов
+
+
+            // Делаем URL компания + категория
+            foreach ($massivcategory as $catid){
+
+                            $coupons = $this->FilterCoupons(['arrCategory' => $catid, 'arrType' => "", 'arrBrands' => $val['id']]);
+                            if (empty($coupons)) continue;
+                            $couponsid = [];
+                            foreach ($coupons as $coupon){
+                                $couponsid[] = $coupon['id'];
+                            }
+
+
+                            $INFO['type'] = "company-category";
+                            $INFO['uri'] = $val['url'];
+                            $INFO['http'] = "https://".CONFIG['DOMAIN']."/promocode/".$val['uri']."/".$categorycoupons[$catid]['url'];;
+
+                            $INFO['META'] = [
+                                'title' => 'Промокоды '.$val['name'].' в разделе "'.trim($categorycoupons[$catid]['name']).'". Витрина промокодов '.APPNAME,
+                                'description' => 'Витрина промокодов и скидок '.APPNAME,
+                                'keywords' => $val['name'].' промокоды, '.$val['name'].' скидки, '.$val['name'].' акции' ,
+                                'H1' => 'Промокоды '.$val['name'].' в разделе "'.trim($categorycoupons[$catid]['name']).'"',
+                            ];
+                            $INFO['META'] = json_encode($INFO['META'] , true);
+
+
+                            unset($BREADCRUMBS);
+                           $BREADCRUMBS['HOME'] = ['Label' => "Промокоды", 'Url' => "/promocode/vse/"];
+                           $BREADCRUMBS['DATA'][] = ['Label' => $val['name'], 'Url' => "/promocode/".$val['uri'].""];
+                           $BREADCRUMBS['DATA'][] = ['Label' => trim($categorycoupons[$catid]['name'])];
+                           $INFO['BREADCRUMBS'] = json_encode($BREADCRUMBS , true);
+
+
+
+                            $INFO['couponsid'] = json_encode($couponsid, true);
+                            $INFO['description'] = "";
+                            $INFO['selflink'] = "";
+
+                            $DATA[] = $INFO;
+
+            }
+            // Делаем URL компания + категория
+
+        }
+        //БРЕНД + КАТЕГОРИЯ КУПОНА
+
+
+
+        return $DATA;
+
+    }
+
+
+
+
     public function WorkWithBanners($token){
 
         $companies = R::findAll('companies', "WHERE `addbanner` = ? LIMIT 40 ", ["0"]);
@@ -112,6 +303,7 @@ class Panel extends \APP\core\base\Model {
 
             $bannerbd = R::dispense("banners");
             $bannerbd->idadmi = $banner['id'];
+            $bannerbd->companyadmi = $company['idadmi'];
             $bannerbd->type = $banner['type'];
             $bannerbd->pictureurl = $banner['banner_image_url'];
             $bannerbd->direct_link = $banner['direct_link'];
@@ -222,6 +414,14 @@ class Panel extends \APP\core\base\Model {
 
 
 
+    public function getUrlSiteforSitemap(){
+
+
+      $DATA =  R::findAll('seopages');
+
+        return $DATA;
+    }
+
     public function LoadCategoriesSimple($coupons, $idcat, $sizeoff = true){
 
 
@@ -314,28 +514,27 @@ class Panel extends \APP\core\base\Model {
     }
 
 
-
     public function AddCustomCoupon($DATA){
 
-            foreach ($DATA as $val){
-                if (empty($val)) return false;
-            }
+        foreach ($DATA as $val){
+            if (empty($val)) return false;
+        }
 
         $company = R::load('companies', $DATA['company']);
 
-            $types = [
-                0=> [
-                    'id' => 2,
-                    'name' => 'Эксклюзив',
-                ]
-            ];
+        $types = [
+            0=> [
+                'id' => 2,
+                'name' => 'Эксклюзив',
+            ]
+        ];
 
 
         $types = json_encode($types, true);
         $categories = json_encode([$DATA['category']], true);
 
 
-        $discount = ($DATA['discount'] == "NULL") ? $discount = null : $discount = $DATA['discount']."%";
+        $discount = ($DATA['discount'] == "NULL") ? $discount = null : $discount = $DATA['discount'];
 
         $species = ($DATA['promocode'] == "NULL") ? $species = "action" : $species = "promocode";
         $date_start = date("Y-m-d");
@@ -346,12 +545,12 @@ class Panel extends \APP\core\base\Model {
 
         if ($DATA['url'] != "NULL"){
             $token = AuthAdmitad();
-            $gotolink = $this->getDeepLink($token, $company['id'], $DATA['url']);
+            $gotolink = $this->getDeepLink($token, $company['idadmi'], $DATA['url']);
         }else{
             $gotolink = $company['ulp'];
         }
 
-            $gotolink .= "?i=3";
+        $gotolink .= "?i=3";
 
 
         $coupon = R::dispense("coupons");
@@ -367,6 +566,7 @@ class Panel extends \APP\core\base\Model {
         $coupon->promocode = $promocode;
         $coupon->gotolink = $gotolink;
         $coupon->status = "active";
+        $coupon->idamicompany = $company['idadmi'];
         $coupon->type = "custom";
 
         $company->ownCouponList[] = $coupon;
@@ -378,7 +578,7 @@ class Panel extends \APP\core\base\Model {
 
 
 
-            return true;
+        return true;
 
     }
 
@@ -1000,46 +1200,6 @@ class Panel extends \APP\core\base\Model {
 
         $WHERE = [];
 
-        if (!empty($ARR['searchQuery'])){
-
-
-            // Добавляем запрос в БД
-            $DATA = [
-                'zapros' => $ARR['searchQuery'],
-            ];
-            $this->addnewBD("zaprosi",$DATA);
-
-            $result = R::findLike("companies", ['name' => [$ARR['searchQuery']]]);
-
-            $FINALcoupons = [];
-
-            if (!empty($result)){
-
-                foreach ($result as $key=>$val){
-                    $FINALcoupons = $FINALcoupons + $val->ownCouponsList;
-                }
-                return $FINALcoupons;
-            }
-
-            $result = R::findLike("companies", ['name' => [translit_sef($ARR['searchQuery'])]]);
-
-            if (!empty($result)){
-                foreach ($result as $key=>$val){
-                    $FINALcoupons = $FINALcoupons + $val->ownCouponsList;
-                }
-                return $FINALcoupons;
-            }
-
-            $result = R::findLike("coupons", ['name' => [ $ARR['searchQuery'] ]]);
-
-            if (!empty($result)) return $result;
-
-
-
-
-            return false;
-        }
-
 
 
         // Запрос в таблицу coupons
@@ -1204,6 +1364,12 @@ class Panel extends \APP\core\base\Model {
         $companies = R::findAll('companies');
         //Смотрим все компании
 
+
+        // Проверяем наличие купонов
+        $first = 0;
+        $checkfirst = R::findAll('coupons');
+        if (empty($checkfirst)) $first = 1;
+
 //        $i=0;
 
         foreach ($companies as $key=>$company){
@@ -1291,7 +1457,8 @@ class Panel extends \APP\core\base\Model {
 
                 echo "<b>Купон ".$val['name']." добавлен </b>  <br>";
 
-                $this->addnewscoupon("add", $val);
+                // Если не первый запуск, то добавляем новости
+             if ($first == 0)   $this->addnewscoupon("add", $val);
 
 
                 R::store($company);
@@ -1660,6 +1827,18 @@ class Panel extends \APP\core\base\Model {
         return $massivdata;
 
     }
+
+
+    public function conversiontodaty(){
+
+        $allconversions = R::findAll("conversion");
+
+
+
+        return $allconversions;
+
+    }
+
     public function companiestoday(){
 
         $listcompanies = R::find("usertoday", "GROUP BY `cmpid` ");
@@ -1688,7 +1867,10 @@ class Panel extends \APP\core\base\Model {
         $conversion = R::findAll("conversion");
         foreach ($conversion as $key=>$val){
 
+
             $coupon = json_decode($val['coupon'], true);
+            if (empty($coupon['companies']['id'])) continue;
+
             $cid = $coupon['companies']['id'];
             $allcompanies[$cid]['conversion'] = $allcompanies[$cid]['conversion']+1;
             $allcompanies[$cid]['zarabotok'] = $allcompanies[$cid]['zarabotok'] + $val['zarabotok'];
@@ -1709,8 +1891,6 @@ class Panel extends \APP\core\base\Model {
     }
 
 
-
-
     public function Getshopswithoutcoupons(){
         $companies = R::findALL("companies");
 
@@ -1726,6 +1906,68 @@ class Panel extends \APP\core\base\Model {
 
 
         return $companywithoutcoupons;
+
+
+    }
+
+
+    public function shopsinwork(){
+
+        // Берем список компаний у которых уже были клики
+        $listcompanies = R::find("usertoday", "GROUP BY `cmpid` ");
+
+        if (empty($listcompanies)) return [];
+        foreach ($listcompanies as $comp){
+            $workcompany[] = $comp['cmpid'];
+        }
+        // Берем список компаний у которых уже были клики
+
+        $companies = R::findALL("companies");
+
+        foreach ($companies as $key=>$company){
+            if (!array_search($company['id'], $workcompany)) unset($companies[$key]);
+
+        }
+
+
+
+        return $companies;
+
+
+    }
+
+
+    public function shopsnotwork(){
+
+        // Берем список компаний у которых уже были клики
+        $listcompanies = R::find("usertoday", "GROUP BY `cmpid` ");
+
+        if (empty($listcompanies)) return [];
+        foreach ($listcompanies as $comp){
+            $workcompany[] = $comp['cmpid'];
+        }
+        // Берем список компаний у которых уже были клики
+
+        $companies = R::findALL("companies");
+
+        foreach ($companies as $key=>$company){
+            if (array_search($company['id'], $workcompany)) unset($companies[$key]);
+
+        }
+
+
+
+        return $companies;
+
+
+    }
+
+
+
+    public function allshops(){
+        $companies = R::findALL("companies");
+
+        return $companies;
 
 
     }

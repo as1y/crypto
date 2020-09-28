@@ -245,7 +245,7 @@
                         <li class="nav-item">
                             <a href="/panel/withoutcoupons" class="nav-link <?=isset($active['withoutcoupons']) ? $active['withoutcoupons'] : ''; ?>">
                                 <i class="icon-question3"></i>
-                                <span>	Без купонов </span>
+                                <span>	Все магазины </span>
                             </a>
                         </li>
 

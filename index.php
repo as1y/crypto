@@ -8,8 +8,9 @@ define('WWW', __DIR__);
 // Переменные для приложения
 define('BASEAVATAR', '/assets/oper1.jpg');
 define('BASELOGO', '/uploads/user_logo/baselogo.jpg');
-define('APPNAME', 'COUPON');
+define('APPNAME', 'KODYPROMO');
 define('MORDA', true);
+define('description', 'Каталог действующих промокодов. Проверка каждый день. Промокоды, акции, скидки, купоны');
 // Переменные для приложения
 
 

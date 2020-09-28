@@ -41,8 +41,10 @@ class PanelController extends AppController {
 
         $companiestoday = $Panel->companiestoday();
 
+        $conversiontodaty = $Panel->conversiontodaty();
 
-        $this->set(compact('companiestoday'));
+
+        $this->set(compact('companiestoday', 'conversiontodaty'));
 
 
 
@@ -548,10 +550,15 @@ class PanelController extends AppController {
 
         $companywithoutcoupons = $Panel->Getshopswithoutcoupons();
 
+        $allshops = $Panel->allshops();
+
+        $shopsinwork = $Panel->shopsinwork();
 
 
+        $shopsnotwork = $Panel->shopsnotwork();
 
-        $this->set(compact('companywithoutcoupons'));
+
+        $this->set(compact('companywithoutcoupons', 'allshops', 'shopsinwork', 'shopsnotwork'));
 
 
 

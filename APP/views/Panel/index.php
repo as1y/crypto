@@ -8,6 +8,36 @@
 
     <div class="card-body">
 
+        <table  class="table datatable-basic text-center">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Дата</th>
+                <th>Компания</th>
+                <th>source</th>
+                <th>Действие</th>
+                <th>Заработок</th>
+
+            </tr>
+            </thead>
+            <tbody>
+
+            <?php
+            foreach ($conversiontodaty as $key=>$value):?>
+                <tr>
+                    <td><?=$key?></td>
+                    <td><?=$value['date']?></td>
+                    <td><?=$value['offer']?></td>
+                    <td><?=json_decode($value['utm'], true)['utm_source']?></td>
+                    <td><?=$value['action']?></td>
+                    <td><b><?=$value['zarabotok']?></b> руб.</td>
+                </tr>
+                <?php   endforeach;?>
+            </tbody>
+        </table>
+
+
+
             <table  class="table datatable-basic text-center">
                 <thead>
                 <tr>
@@ -39,7 +69,6 @@
                 endforeach;?>
                 </tbody>
             </table>
-
         <hr>
         <b>ОБЩИЙ ЗАРАБОТОК: </b> <?=$allzarabotok?>
 

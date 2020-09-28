@@ -1,20 +1,42 @@
 <div class="card">
     <div class="card-header bg-dark text-white header-elements-inline">
-        <h5 class="card-title">ДОБАВЛЕНИЕ КУПОНА</h5>
+        <h5 class="card-title">СПИСОК МАГАЗИНОВ</h5>
 
     </div>
 
     <div class="card-body">
 
-    <?php
-        foreach ($companywithoutcoupons as $key=>$company){
+        <h1>ВСЕ МАГАЗИНЫ</h1>
+        <?php
+        foreach ($allshops as $key=>$company){
 
-            echo $company['name']."<br>";
+            echo str_replace("-", " ", $company['name'])." промокод<br>";
         }
 
+        ?>
 
-    ?>
 
+        <h1>МАГАЗИНЫ С ОТРКУТКОЙ</h1>
+        <?php
+        foreach ($shopsinwork as $key=>$company){
+
+            echo str_replace("-", " ", $company['name'])." промокод<br>";
+        }
+
+        ?>
+
+
+
+
+        <h1>МАГАЗИНЫ БЕЗ ОТКРУТКИ</h1>
+        <?php
+        foreach ($shopsnotwork as $key=>$company){
+
+
+            echo str_replace("-", " ", $company['name'])." промокод<br>";
+        }
+
+        ?>
 
 
 

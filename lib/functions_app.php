@@ -126,8 +126,6 @@ function generatecsvYandex($ADV, $DATA){
 }
 
 
-
-
 function generatecsvAdwords($ADV, $DATA){
 
     echo "".$DATA['namecompany'].",".$ADV['rekl'].",,,,,,,,,,,0.01,0.01,0.01,None,Disabled,Default"."<br>";
@@ -484,7 +482,6 @@ return $result;
 }
 
 
-
 function popUPcoupon (){
 
     if (!empty($_COOKIE['runmodal'])) $couponmodal =\APP\models\Panel::loadOneCoupon($_COOKIE['runmodal']);
@@ -577,43 +574,6 @@ function AuthAdmitad(){
 
 }
 
-
-
-
-
-
-
-function RenderCouponsinADD($coupons){
-?>
-
-        <label>ОФФЕР: <span class="text-danger">*</span> </label>
-
-    <select name="coupon" class="form-control">
-        <?php foreach ($coupons as $key=>$val):?>
-            <option value="<?=$val['id']?>"><?=$val['name']?></option>
-        <?php endforeach;?>
-    </select>
-
-
-
-
-
-        </select>
-
-
-<?php
-}
-
-
-function toWindow($ii){
-    return iconv( "utf-8", "windows-1251",$ii);
-}
-
-
-
-
-
-
 function renderCoupon($coupon){
     ?>
 
@@ -645,7 +605,7 @@ function renderCoupon($coupon){
         </div>
         <div class="coupon-content">
             <h6><a href="//<?=CONFIG['DOMAIN']?>/go/?coupon=<?=$coupon['id']?>" onclick="clck(<?=$coupon['id']?>)"><?=$coupon->companies['name']?> </a></h6>
-            <p><?=obrezanie($coupon['short_name'], 50)?></p>
+            <p><?=$coupon['short_name']?></p>
             <div class="coupon-content-bottom">
                 <p><i class="fa fa-users"></i> <?=$coupon['used']?>
                     <i class="fa fa-clock-o"></i> <?=calculate_exp($coupon['dateend'])?>
@@ -662,6 +622,8 @@ function renderCoupon($coupon){
 
 <?php
 }
+
+
 
 
 

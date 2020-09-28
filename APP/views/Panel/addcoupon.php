@@ -51,7 +51,7 @@
 
                     <div class="col-md-12">
                         <div class="form-group">
-                            <label>СКИДКА (без знака %): <span class="text-danger">*</span></label>
+                            <label>СКИДКА (со знаком % или Рубля): <span class="text-danger">*</span></label>
                             <input type="text" name="discount" value="NULL" class="form-control required" placeholder="10">
                         </div>
                     </div>

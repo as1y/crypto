@@ -124,7 +124,7 @@ class View {
 
         ?>
 
-                    <nav class="woocommerce-breadcrumb" >
+
                     <b>
                         <a href="<?=self::$Breadcrumbs['HOME']['Url'];?>"><?=self::$Breadcrumbs['HOME']['Label'];?></a>
                     </b>
@@ -137,10 +137,11 @@ class View {
 
             <?php if (!empty($val['Url'])):?>
 
-                        <i class="fa fa-angle-right"><a href="<?=self::$Breadcrumbs['HOME']['Url'];?>"><?=self::$Breadcrumbs['HOME']['Label'];?></a>
+
+                <i class="fa fa-angle-right"></i>   <a href="<?=$val['Url'];?>"><?=$val['Label'];?></a>
 
                             <?php else:?>
-                <span class="delimiter"><i class="fa fa-angle-right"></i></span><?=$val['Label']?>
+                <i class="fa fa-angle-right"></i></span><?=$val['Label']?>
             <?php endif;?>
 
 
@@ -148,7 +149,7 @@ class View {
         <?php endforeach;?>
 
 
-                    </nav>
+
 
 
 

@@ -19,15 +19,50 @@ class PromocodeController extends AppController {
             'description' => 'Витрина промокодов и скидок'.APPNAME,
             'keywords' => 'Витрина промокодов и скидок'.APPNAME,
         ];
+
+        $BREADCRUMBS = [];
+
+        // Забор SEO информации
+        $scripturl = "https://".CONFIG['DOMAIN'].$_SERVER['SCRIPT_URL'];
+        $seopage =    $Panel->getSEOPAGES($scripturl);
+        if (!empty($seopage)) {
+            $META = json_decode($seopage['meta'], true);
+            $BREADCRUMBS = json_decode($seopage['breadcrumbs'], true);
+        }
         \APP\core\base\View::setMeta($META);
+       \APP\core\base\View::setBreadcrumbs($BREADCRUMBS);
 
-//        $BREADCRUMBS['HOME'] = ['Label' => "Промокоды", 'Url' => "/"];
-//        $BREADCRUMBS['DATA'][] = ['Label' => $category['name']];
-//        \APP\core\base\View::setBreadcrumbs($BREADCRUMBS);
+//    show($BREADCRUMBS);
 
+        // Перелистывание страниц
+        if($this->isAjax()){
 
-        // Запрос на прямую
-        if ($this->isAjax() == false){
+            $this->layaout = false;
+
+            if (!empty($_POST['arrCategory'])) $_POST['arrCategory'] = $Panel->FindIdCategoryCoupon($_POST['arrCategory']);
+            if (!empty($_POST['arrBrands'])) $_POST['arrBrands'] = $Panel->FindIdBrandCoupon($_POST['arrBrands']);
+
+            // Загрузка купонов
+            $coupons = $Panel->FilterCoupons(['arrCategory' => $_POST['arrCategory'], 'arrType' => $_POST['arrType'], 'arrBrands' => $_POST['arrBrands']]);
+
+            // Пагинация
+            if (empty($_POST['arrCount'])){
+
+                $PAGESLIST['CouponsPerPage'] = $CouponsPerPage;
+                $PAGESLIST['ViewPage'] = (!empty($_POST['page'])) ? $_POST['page']  : 1;
+
+                $catalogCategories = $Panel->LoadCategoriesSimple($coupons, $_POST['arrCategory']);
+
+                generateResult($coupons, $PAGESLIST, $catalogCategories);
+                $_SESSION['POST'] = $_POST;
+                return true;
+            }
+            // Пагинация
+            return true;
+
+        }
+        // Перелистывание страниц
+
 
             if (empty($this->route['alias'])) $this->route['alias'] = "";
             if (empty($this->route['alias2'])) $this->route['alias2'] = "";
@@ -38,32 +73,9 @@ class PromocodeController extends AppController {
             // Базовые страницы
 
             // Забираем Определяем ID бренда или Категории
-            $brand = $Panel->FindIdBrandCoupon($this->route['alias']);
-            $idbrand = $brand['id'];
-            $category = $Panel->FindIdCategoryCoupon($this->route['alias2']);
-            $idcat = $category['id'];
+           $idbrand = $Panel->FindIdBrandCoupon($this->route['alias'])['id'];
+           $idcat = $Panel->FindIdCategoryCoupon($this->route['alias2'])['id'];
 
-            //Генерируем META и H1
-
-            if (!empty($idbrand)){
-                $META = [
-                    'title' => $brand['name']." - промокоды, купоны, скидки, акции",
-                    'H1' => $brand['name']." - промокоды, купоны, скидки, акции"
-                ];
-                \APP\core\base\View::setMeta($META);
-            }
-
-            if (!empty($category)){
-                $META = [
-                    'title' => "Промокоды, купоны и скидки в категории ".$category['name'],
-                    'H1' => "Промокоды, купоны и скидки в категории ".$category['name']
-                ];
-                \APP\core\base\View::setMeta($META);
-            }
-
-
-
-            //Генерируем META и H1
 
 
             // Обработка GET параметров
@@ -98,47 +110,13 @@ class PromocodeController extends AppController {
 
             $catalogType = $Panel->LoadTypes($coupons, $arrtype);
 
+
+
             $this->set(compact( 'coupons', 'catalogCompany', 'catalogCategories', 'catalogType', 'PAGESLIST'));
 
 
+            return true;
 
-        }
-        // Запрос на прямую
-
-
-
-
-
-        // Перелистывание страниц
-        if($this->isAjax()){
-
-            $this->layaout = false;
-
-            if (!empty($_POST['arrCategory'])) $_POST['arrCategory'] = $Panel->FindIdCategoryCoupon($_POST['arrCategory']);
-            if (!empty($_POST['arrBrands'])) $_POST['arrBrands'] = $Panel->FindIdBrandCoupon($_POST['arrBrands']);
-
-            // Загрузка купонов
-            $coupons = $Panel->FilterCoupons(['arrCategory' => $_POST['arrCategory'], 'arrType' => $_POST['arrType'], 'arrBrands' => $_POST['arrBrands']]);
-
-            // Пагинация
-            if (empty($_POST['arrCount'])){
-
-                $PAGESLIST['CouponsPerPage'] = $CouponsPerPage;
-                $PAGESLIST['ViewPage'] = (!empty($_POST['page'])) ? $_POST['page']  : 1;
-
-                $catalogCategories = $Panel->LoadCategoriesSimple($coupons, $_POST['arrCategory']);
-
-                generateResult($coupons, $PAGESLIST, $catalogCategories);
-                $_SESSION['POST'] = $_POST;
-                return true;
-            }
-            // Пагинация
-
-
-        }
-        // Перелистывание страниц
-
-        return true;
 
 
 
