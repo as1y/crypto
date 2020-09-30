@@ -56,7 +56,7 @@ class TurboController extends AppController {
                  $rss.= '<p>'.trim($coupon->companies['name']).'</p>';
                 $rss.= '<p><figure><img src="https://'.CONFIG['DOMAIN'].$coupon->companies['logo'].'"/></figure></p>';
 
-                
+
                 $rss.= '<p><b>'.trim($coupon->companies['name']).'</b></p>';
                 $rss.= '<p>'.$coupon['short_name'].'</p>';
 

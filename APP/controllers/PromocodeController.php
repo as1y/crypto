@@ -39,11 +39,13 @@ class PromocodeController extends AppController {
 
             $this->layaout = false;
 
-            if (!empty($_POST['arrCategory'])) $_POST['arrCategory'] = $Panel->FindIdCategoryCoupon($_POST['arrCategory']);
-            if (!empty($_POST['arrBrands'])) $_POST['arrBrands'] = $Panel->FindIdBrandCoupon($_POST['arrBrands']);
+            if (!empty($_POST['arrCategory'])) $_POST['arrCategory'] = $Panel->FindIdCategoryCoupon($_POST['arrCategory'])['id'];
+            if (!empty($_POST['arrBrands'])) $_POST['arrBrands'] = $Panel->FindIdBrandCoupon($_POST['arrBrands'])['id'];
+
 
             // Загрузка купонов
             $coupons = $Panel->FilterCoupons(['arrCategory' => $_POST['arrCategory'], 'arrType' => $_POST['arrType'], 'arrBrands' => $_POST['arrBrands']]);
+
 
             // Пагинация
             if (empty($_POST['arrCount'])){
