@@ -2,7 +2,7 @@
 return [
     'LAYOUT' => 'MAIN',
     'DOMAIN' => 'kodypromo.ru',
-    'UA' => 'UA-177547389-1',
+    'UA' => 'UA-173141725-3',
     'USERTABLE' => 'users',
     'BASEMAIL' => [
         'name' => 'ДЕЙСТВУЮЩИЕ ПРОМОКОДЫ',

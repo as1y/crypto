@@ -334,8 +334,6 @@ function gtmBODY(){
     <?php
 }
 
-
-
 function gtmHEAD(){
     ?>
     <!-- Google Tag Manager -->

@@ -10,6 +10,7 @@ function subscribecode(idcoupon) {
 
     str =  '&email=' + email + '&type=send' + '&idcoupon=' + idcoupon;
 
+
     $.ajax(
         {
             url : /subscribe/,
