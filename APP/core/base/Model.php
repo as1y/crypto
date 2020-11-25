@@ -7,7 +7,10 @@ abstract class Model
 {
 	public $errors = [];
     static $COMPANIES = [];
-    static $CATEGORYcoupon = [];
+    static $CATEGORY = [];
+    static $BRANDS = [];
+    static $USER = [];
+
 
 	public function __construct()
 	{
@@ -21,10 +24,16 @@ abstract class Model
 //                self::$USER = $this->loaduser(CONFIG['USERTABLE'], $_SESSION['ulogin']['id']);
 //            }
 
+            if (!empty($_SESSION['ulogin']['id'])){
+                self::$USER = $this->loaduser(CONFIG['USERTABLE'], $_SESSION['ulogin']['id']);
+            }
 
-            self::$CATEGORYcoupon = R::findAll('categorycoupons', 'ORDER by `count` DESC');
+
+            self::$CATEGORY = R::findAll('category', 'ORDER by `countshop` DESC');
 
             self::$COMPANIES = R::findAll('companies', 'ORDER by `id` ASC');
+
+            self::$BRANDS = R::findAll('brands', 'ORDER by `countview` DESC');
 
 
 
@@ -87,6 +96,18 @@ abstract class Model
 
 
 
+    public static function getBal(){
+
+        return self::$USER['bal'];
+    }
+
+
+    public static function getTopProduct(){
+
+        return R::findAll('product', 'ORDER by `used` DESC LIMIT 5');
+    }
+
+
 
 
 	public function getErrorsVali()
@@ -115,9 +136,9 @@ abstract class Model
 
     public static function getCategory($limit = ""){
 
-        if (!$limit) return self::$CATEGORYcoupon;
+        if (!$limit) return self::$CATEGORY;
 
-	    $categorylimit = self::$CATEGORYcoupon;
+	    $categorylimit = self::$CATEGORY;
 
             $i = 0;
 	        foreach ($categorylimit as $key=>$value ){

@@ -12,11 +12,9 @@ class User extends \APP\core\base\Model
 
         $rules = [
             'required' => [
-                ['username'],
                 ['email'],
                 ['password'],
                 ['password2'],
-                ['terms'],
             ],
             'email' =>[
                 ['email'],
@@ -159,6 +157,8 @@ class User extends \APP\core\base\Model
 		//ФОРМИРУЕМ МАССИВ ДАННЫХ ДЛЯ РЕГИСТРАЦИИ
 		$MASSREG = [
 	    	'username' => $_SESSION['confirm']['username'],
+            'type' => "buyer",
+            'bal' => "0",
 	    	'email' => $_SESSION['confirm']['email'],
 	    	'pass' => $_SESSION['confirm']['password'],
 	    	'ref' => $_SESSION['confirm']['ref'],

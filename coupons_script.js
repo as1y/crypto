@@ -1,96 +1,20 @@
 
-var arrBrands = [];
-var arrType = "";
-var arrCategory = "";
+var Category = "";
+var Company = "";
+var Sortirovka = "";
+var Brand = "";
 
-
-function subscribecode(idcoupon) {
-
-    let email = $('[name=emailcode]').val();
-
-    str =  '&email=' + email + '&type=send' + '&idcoupon=' + idcoupon;
-
-
-    $.ajax(
-        {
-            url : /subscribe/,
-            type: 'POST',
-            data: str,
-            cache: false,
-            success: function(subs ) {
-
-                $('#modalbody').empty();
-                $('#modalbody').append('<h5>Промокод отправлен на e-mail!</h5>');
-
-                // $('#modalbody').append(subs);
-
-
-
-            }
-        }
-    );
-
-
-
-
-
-}
-
-function subscribefooter() {
-
-    let email = $('[name=email]').val();
-    str =  '&email=' + email + '&type=footer';
-
-    $.ajax(
-        {
-            url : /subscribe/,
-            type: 'POST',
-            data: str,
-            cache: false,
-            success: function(subs ) {
-
-                $('[name=subscribemodal]').modal('show');
-                $('[name=email]').val("");
-
-            }
-        }
-    );
-
-
-}
 
 function ChangeFilter() {
     str = getFilterParamsParams();
 
-    let addr;
-    getparam = getUrlParams();
 
-    // Конструктор URL
+    let addr = '/catalog/' + str;
 
     // Если выбран только бренд
 
-    if (arrBrands != "" && arrCategory == ""){
-        addr = '/promocode/' + arrBrands;
-    }
-
-    if (arrBrands != "" && arrCategory != ""){
-        addr = '/promocode/' + arrBrands + '/' + arrCategory;
-    }
-
-    if (arrBrands == "" && arrCategory != ""){
-        addr = '/promocode/vse/' + arrCategory;
-    }
-
-    if (arrBrands == "" && arrCategory == ""){
-        addr= '/promocode/vse/';
-    }
 
 
-    if (arrType != ""){
-
-        addr = addr + "?type=" + arrType;
-
-    }
 
     window.location.href = addr;
 
@@ -134,14 +58,18 @@ function clck(couponid)
 
 
 function getFilterParamsParams() {
-    arrBrands = "";
-    arrType = "";
-    arrCategory = "";
+    Category = "";
+    Company = "";
+    Sortirovka = "";
+    Brand = "";
 
-    arrBrands = $('select[name=companies]').val();
-    arrType = $('select[name=type]').val();
-    arrCategory = $('select[name=category]').val();
-    str =  '&arrBrands=' + arrBrands + '&arrType=' + arrType + '&arrCategory=' + arrCategory;
+    Category = $('select[name=category]').val();
+    Company = $('select[name=company]').val();
+    Sortirovka = $('select[name=sort]').val();
+
+    str =  '?Category=' + Category + '&Company=' + Company + '&Brand=' + Brand + '&sort=' + Sortirovka;
+
+
     return str;
 
 }

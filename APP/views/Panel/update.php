@@ -9,24 +9,29 @@
 
 
 
-        <a href="/update/?action=updatecompany" type="button" target="_blank" class="btn btn-info"><i class="icon-check mr-2"></i>ОБНОВИТЬ ВРУЧНУЮ</a>
+        <a href="/update/?action=updatecompany" type="button" target="_blank" class="btn btn-info"><i class="icon-check mr-2"></i>ЗАГРУЗИТЬ КОМПАНИИ</a>
         <br>
         Дата последнего обновления компаний: <?=$updatestatus[1]['date']?> <br>
          <hr>
 
+        <a href="/update/?action=updateproduct" target="_blank" type="button" class="btn btn-info"><i class="icon-check mr-2"></i>ОБНОВИТЬ ТОВАРЫ</a>
+        <br>
+        Дата последнего обновления товаров: <?=$updatestatus[2]['date']?> <br>
+        <hr>
+
         <a href="/update/?action=updatecoupons" target="_blank" type="button" class="btn btn-info"><i class="icon-check mr-2"></i>ОБНОВИТЬ ВРУЧНУЮ</a>
         <br>
-        Дата последнего обновления купонов: <?=$updatestatus[2]['date']?> <br>
+        Дата последнего обновления купонов: <?=$updatestatus[3]['date']?> <br>
         <hr>
 
         <a href="/update/?action=updatebanners" target="_blank" type="button" class="btn btn-info"><i class="icon-check mr-2"></i>ОБНОВИТЬ ВРУЧНУЮ</a>
         <br>
-        Дата последнего обновления баннеров: <?=$updatestatus[3]['date']?> <br>
+        Дата последнего обновления баннеров: <?=$updatestatus[4]['date']?> <br>
         <hr>
 
         <a href="/update/?action=seopages" target="_blank" type="button" class="btn btn-info"><i class="icon-check mr-2"></i>ОБНОВИТЬ ВРУЧНУЮ</a>
         <br>
-        Дата последнего обновления seo страниц: <?=$updatestatus[3]['date']?> <br>
+        Дата последнего обновления seo страниц: <?=$updatestatus[5]['date']?> <br>
 
 
     </div>

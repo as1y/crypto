@@ -13,9 +13,6 @@
             <?php endfor;?>
 
 
-
-
-
             <?php if($PAGESLIST['ViewPage'] < $endpage): ?>
                 <li class="page-item"><a class="page-link" href="#" onclick="changePage(<?=($PAGESLIST['ViewPage']+1)?>)">Вперед <i class="fa fa-angle-right"></i></a></li>
             <?php endif;?>

@@ -1,24 +1,24 @@
 <?php
 return [
     'LAYOUT' => 'MAIN',
-    'DOMAIN' => 'kodypromo.ru',
-    'UA' => 'UA-173141725-3',
+    'DOMAIN' => 'promocode.plus',
+//    'UA' => 'UA-173141725-3',
     'USERTABLE' => 'users',
     'BASEMAIL' => [
-        'name' => 'ДЕЙСТВУЮЩИЕ ПРОМОКОДЫ',
-        'email' => 'promocode@kodypromo.ru'
+        'name' => 'ТОВАРНЫЙ CASHBACK',
+        'email' => 'promocode@promocode.plus'
     ],
 
     'db' => [
-        'dsn' => 'mysql:host=127.0.0.1;dbname=dbkodypromo;charset=utf8;port=3306',
-        'user' => 'userkodypromo',
-        'pass' => 'Mi!7eDMMm&=cGIt',
+        'dsn' => 'mysql:host=127.0.0.1;dbname=dbpromocode;charset=utf8;port=3306',
+        'user' => 'userpromocode',
+        'pass' => 'tSlHsoC]BG%%HM(',
     ],
- 
+
     'ADMITAD' => [
-        'cliend_id' => "siJ57hsxAW3i7mkQZzCNLMR0J8ytC5",
-        'cliend_secret' => "hIlml5TYeTjSmXEbUKsEoBHhm4R8Wv",
-        'WID' => "1563674", //ID ПЛОЩАДКИ
+        'cliend_id' => "U5KTmLOGWL9VOmdAzvEsrtEVDOiFWu",
+        'cliend_secret' => "QUhIvPxtaXCNqsrxOkmNdhz7Dj2o4E",
+        'WID' => "1642924", //ID ПЛОЩАДКИ
     ],
 
 

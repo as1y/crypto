@@ -200,6 +200,166 @@ class Panel extends \APP\core\base\Model {
 
 
 
+
+    public function balancelog(){
+        $balancelog = R::findAll("balancelog", "WHERE users_id = ?" , [ $_SESSION['ulogin']['id'] ]);
+        return $balancelog;
+    }
+
+
+    public function GenerateFilter($PARAM) {
+
+        $CATEGORY = self::$CATEGORY;
+        $COMPANIES = self::$COMPANIES;
+        $BRANDS = self::$BRANDS;
+
+
+        // РАБОТА С КАТЕГОРИЕЙ
+        if (!empty($PARAM['Category'])) {
+            $CATEGORY[$PARAM['Category']]['select'] = 1;
+
+            // Убираем магазины у которых нет выбранной категории
+            foreach ($COMPANIES as $key=>$val){
+                $category = json_decode($val['category'], true);
+                if (!in_array($PARAM['Category'],$category )) unset($COMPANIES[$key]);
+            }
+
+        }
+        // РАБОТА С КАТЕГОРИЕЙ
+
+        if (!empty($PARAM['Company'])){
+            $COMPANIES[$PARAM['Company']]['select'] = 1;
+            // Убираем категории в которых нет данного магазина
+            $CAT = json_decode($COMPANIES[$PARAM['Company']]['category'], true);
+//            echo "КАТЕГОРИИ ВЫБРАННОГО ПРОЕКТА<br>";
+//            show($CAT );
+            // Убираем категории в которых нет данного магазина
+            foreach ($CATEGORY as $key=>$val){
+                if (!in_array($val['id'],$CAT)) unset($CATEGORY[$key]);
+            }
+        }
+
+
+        // РАБОТА С МАГАЗИНАМИ
+
+
+
+
+        $result['catalogCategories']  = $CATEGORY;
+        $result['catalogCompany']  = $COMPANIES;
+        $result['catalogBrands']  = $BRANDS;
+        $result['sort']  = "";
+        if (!empty($PARAM['sort']))  $result['sort']  = $PARAM['sort'];
+
+
+
+        return $result;
+
+
+
+    }
+
+
+
+    public function addrequis($DATA){
+
+        if (!empty($DATA['qiwi'])){
+            $requis = json_decode(self::$USER->requis, true);
+            $DATA['qiwi'] = clearrequis( $DATA['qiwi']);
+            $requis['qiwi'] = $DATA['qiwi'];
+            $requis = json_encode($requis, true);
+            self::$USER->requis = $requis;
+        }
+
+
+        if (!empty($DATA['yamoney'])){
+            $requis = json_decode(self::$USER->requis, true);
+            $DATA['yamoney'] = clearrequis( $DATA['yamoney']);
+            $requis['yamoney'] = $DATA['yamoney'];
+            $requis = json_encode($requis, true);
+            self::$USER->requis = $requis;
+        }
+
+
+        if (!empty($DATA['cardvisa'])){
+            $requis = json_decode(self::$USER->requis, true);
+            $DATA['cardvisa'] = clearrequis( $DATA['cardvisa']);
+            $requis['cardvisa'] = $DATA['cardvisa'];
+            $requis = json_encode($requis, true);
+            self::$USER->requis = $requis;
+        }
+
+
+        if (!empty($DATA['cardmaster'])){
+            $requis = json_decode(self::$USER->requis, true);
+            $DATA['cardmaster'] = clearrequis( $DATA['cardmaster']);
+            $requis['cardmaster'] = $DATA['cardmaster'];
+            $requis = json_encode($requis, true);
+            self::$USER->requis = $requis;
+        }
+
+
+        if (!empty($DATA['cardmir'])){
+            $requis = json_decode(self::$USER->requis, true);
+            $DATA['cardmir'] = clearrequis( $DATA['cardmir']);
+            $requis['cardmir'] = $DATA['cardmir'];
+            $requis = json_encode($requis, true);
+            self::$USER->requis = $requis;
+        }
+
+        if (!empty($DATA['cardukr'])){
+            $requis = json_decode(self::$USER->requis, true);
+            $DATA['cardukr'] = clearrequis( $DATA['cardukr']);
+            $requis['cardukr'] = $DATA['cardukr'];
+            $requis = json_encode($requis, true);
+            self::$USER->requis = $requis;
+        }
+
+
+
+        R::store(self::$USER);
+
+        return true;
+    }
+
+
+
+    public function createviplata($DATA){
+
+        self::$USER->bal = self::$USER->bal - $DATA['summa'];
+        R::store(self::$USER);
+
+        $DATA = [
+            'users_id' => $_SESSION['ulogin']['id'],
+            'date' => date("Y-m-d H:i:s"),
+            'sum' => $DATA['summa'],
+            'comment' => "Вывод средств на <b>".$DATA['sposob']."</b>",
+            'type' => "credit",
+            'status' => 0,
+            'method' => $DATA['sposob'],
+        ];
+
+        $this->addnewBD("balancelog", $DATA);
+
+
+
+        return true;
+    }
+
+
+    public function moipokupki(){
+
+        $result = [];
+
+        $result = R::findAll('conversion', "WHERE `uid` = ?", [$_SESSION['ulogin']['id']]);
+
+        return $result;
+
+    }
+
+
+
+
     public function WorkWithBanners($token){
 
         $companies = R::findAll('companies', "WHERE `addbanner` = ? LIMIT 40 ", ["0"]);
@@ -396,6 +556,10 @@ class Panel extends \APP\core\base\Model {
 
     public static function loadOneCoupon($id){
         return R::Load('coupons', $id);
+    }
+
+    public static function loadOneProduct($id){
+        return R::Load('product', $id);
     }
 
 
@@ -1159,6 +1323,34 @@ class Panel extends \APP\core\base\Model {
         return R::loadAll("banners", $ARR);
     }
 
+    public function LoadProductCategory($idcat) {
+
+
+        // Загрузка компаний у которых есть это категория
+        $companies = R::find("companies", 'WHERE JSON_CONTAINS(`category`, JSON_ARRAY("'.$idcat.'")) LIMIT 5');
+
+        $tovari = [];
+        foreach ($companies as $company){
+
+            $tovari = $tovari +  R::findAll("product", "WHERE `companies_id` = ? LIMIT 10", [$company['id']]);
+
+        }
+
+        shuffle($tovari);
+        return $tovari;
+
+    }
+
+
+    public function LoadTopDiscount() {
+
+        return R::findAll("product", "ORDER BY `percentdiscount` DESC LIMIT 30");
+
+    }
+
+
+
+
 
 
     public function FindIdCategoryCoupon($url) {
@@ -1169,6 +1361,20 @@ class Panel extends \APP\core\base\Model {
     public function LoadCategoryCoupon($url) {
         return R::findOne('categorycoupons', 'WHERE url =?', [$url]);
     }
+
+
+    public function LoadProduct($data) {
+
+        $product =  R::load('product', $data['alias']);
+
+        if (empty($product)) return false;
+        if (translit_sef($product['name']) != $data['alias2']) return false;
+
+        return $product;
+
+    }
+
+
 
 
     public function FindIdBrandCoupon($url) {
@@ -1194,6 +1400,8 @@ class Panel extends \APP\core\base\Model {
         return R::findOne('companies', 'WHERE `uri` =?', [$url]);
 
     }
+
+
 
 
     public function FilterCoupons($ARR) {
@@ -1224,6 +1432,57 @@ class Panel extends \APP\core\base\Model {
 
 
         $result = R::find("coupons", $WHERE);
+
+
+
+        return $result;
+
+    }
+
+
+
+
+    public function FilterProduct($ARR) {
+
+        $WHERE = [];
+
+
+
+//        // Запрос в таблицу coupons
+//        if (!empty($ARR['arrBrands'])){
+//            $WHERE[] =  "`companies_id` IN (".$ARR['arrBrands'].")";
+//        }
+
+//        if ($ARR['arrType'] == "promocode" || $ARR['arrType'] == "action" ){
+//            $WHERE[] =  '`species` = "'.$ARR['arrType'].'" ';
+//        }
+
+
+        if (!empty($ARR['Category'])){
+            $WHERE[] =  'JSON_CONTAINS(`categorycompany`, JSON_ARRAY("'.$ARR['Category'].'") )';
+        }
+
+
+        if (!empty($ARR['Company'])){
+            $WHERE[] =  '`companies_id` = '.$ARR['Company'].' ';
+        }
+
+
+        $WHERE = constructWhere($WHERE);
+
+
+        if (!empty($ARR['sort'])){
+            $WHERE .= 'ORDER BY `'.$ARR['sort'].'` DESC ';
+        }
+
+
+
+        // Добавляем сортировку
+        $WHERE .= " LIMIT 100";
+
+
+
+        $result = R::find("product", $WHERE);
 
 
 
@@ -1485,21 +1744,21 @@ class Panel extends \APP\core\base\Model {
 
 
 
-    function RedirCoupon($coupon){
+    function RedirCoupon($productid){
 
 
-        $coupon =  R::Load('coupons', $_GET['coupon']);
+        $product =  R::Load('product', $productid);
 
-        if (!empty($coupon)){
-            $coupon->used = $coupon->used +1;
-            R::store($coupon);
+        if (!empty($product)){
+            $product->used = $product->used +1;
+            R::store($product);
 
             // Отправка ПОСТБЕКА
             // subid1 = couponID
             // subid2 = uniqID наш
             // subid4 = subID google
 
-            $link = $coupon['gotolink']."&subid1=".$coupon['id']."&subid2=".$_SESSION['SystemUserId']."&subid4=".gaUserId()."&subid3=".gaUserIdGA();
+            $link = $product['url']."&subid1=".$product['id']."&subid2=".$_SESSION['ulogin']['id']."&subid4=".gaUserId()."&subid3=".gaUserIdGA();
             // Отправка ПОСТБЕКА
 
             redir($link);
@@ -1517,6 +1776,106 @@ class Panel extends \APP\core\base\Model {
      return R::findAll("updatestatus");
 
     }
+
+
+
+    public function addfeedBD($feed){
+
+
+
+        foreach ($feed as $key=>$value){
+
+            $company = R::load("companies", $key);
+
+
+
+            foreach ($value as $tovari){
+
+                if ($tovari['price'] < 1000) continue;
+
+                if (empty($tovari['vendor'])) $tovari['vendor'] = "";
+                if (empty($tovari['param'])) $tovari['param'] = "";
+                if (empty($tovari['oldprice'])) $tovari['oldprice'] = 0;
+
+                $percentdiscount = 0;
+                if ($tovari['oldprice'] != "0")  {
+                    $percentdiscount = 100 - ($tovari['price']/$tovari['oldprice'])*100;
+                    $percentdiscount = round($percentdiscount);
+                }
+
+
+                $categoryportal = "";
+
+                $uri = translit_sef($tovari['name']);
+
+                $cashback = calculatecashback($company['paymentsize'], $tovari['price']);
+
+
+
+                $this->workbrandProdut($tovari['vendor']);
+
+
+
+                $product = R::dispense("product");
+                $product->idadmi = $tovari['id'];
+                $product->name = $tovari['name'];
+                $product->uri = $uri;
+                $product->cashback = $cashback;
+                $product->categorycompany = $company['category'];
+                $product->categoryadmi = $tovari['categoryId'];
+                $product->description = $tovari['description'];
+                $product->categoryportal = $categoryportal;
+                $product->price = $tovari['price'];
+                $product->percentdiscount = $percentdiscount;
+                $product->oldprice = $tovari['oldprice'];
+                $product->url = $tovari['url'];
+                $product->vendor = $tovari['vendor'];
+                $product->currency = $tovari['currencyId'];
+                $product->param = $tovari['param'];
+                $product->picture = $tovari['picture'];
+
+                $product->views = 0;
+                $company->ownBannerList[] = $product;
+
+            }
+
+
+            $company->loadfeed = 1;
+            R::store($company);
+
+
+
+
+
+
+        }
+
+
+    }
+
+    public function loadfeedCSV(){
+
+        // Берем компании у которых не загружен FEED. Ночью их обнуляем и обновляем
+        $companies = R::findAll('companies', "WHERE `loadfeed` = ? LIMIT 1", ["0"]);
+
+        $MASS = [];
+
+        if (!empty($companies)){
+            foreach ($companies as $key=>$val){
+                $MASS[$key] = parsecsv($val['productscsv']);
+                R::store($val);
+
+            }
+        }
+
+
+        return $MASS;
+
+
+    }
+
+
+
 
     public function updatecheck($type){
 
@@ -1557,7 +1916,7 @@ class Panel extends \APP\core\base\Model {
         foreach ($admicompanies as $key=>$val){
             // Проверяем наличие магазина в БД
             if (!empty($RS[$val['id']])) {
-                echo "Партнерская программа ".$val['name']." уже добавлена. <br>";
+                echo "Партнерская программа ".$val['name']." уже добавлена, но мы ее обновим <br>";
                 continue;
             }
             if ($val['connection_status'] != "active") continue;
@@ -1572,8 +1931,11 @@ class Panel extends \APP\core\base\Model {
             // Работа с категориями
             $categories =  extractcategories($val['categories']);
             $categories = $this->workcategories($categories);
-            $categories = json_encode($categories, true);
+
             // Работа с категориями
+            $categories = json_encode($categories, JSON_HEX_TAG | JSON_UNESCAPED_UNICODE);
+
+
 
             $val['name'] = str_replace("RU", "", $val['name']);
             $val['name'] = str_replace("WW", "", $val['name']);
@@ -1586,6 +1948,10 @@ class Panel extends \APP\core\base\Model {
 //            if (empty($deeplink)) $deeplink = "";
         $deeplink = $val['gotolink'];
 
+         $paymentsize = $val['actions'][0]['payment_size'];
+
+            $paymentsize = raskladkapayment($paymentsize);
+
 
             $DATA = [
                 'idadmi' => $val['id'],
@@ -1596,14 +1962,17 @@ class Panel extends \APP\core\base\Model {
                 'ecpc' => $val['ecpc'],
                 'category' => $categories,
                 'logo' => $logo,
+                'productscsv' => $val['products_csv_link'],
                 'description' => "",
+                'view' => 0,
                 'status' => $val['status'],
+                'paymentsize' => $paymentsize,
                 'addbanner' => 0,
+                'loadfeed' => 0
             ];
 
             $this->addnewBD("companies", $DATA);
 
-//            echo "Добавлена партнерская программа <b>".$val['name']."</b> !";
 
 
         }
@@ -1616,6 +1985,34 @@ class Panel extends \APP\core\base\Model {
 
         return true;
 
+    }
+
+
+
+
+    public function workbrandProdut($brand){
+
+        $BRANDS = R::findOne("brands", "WHERE name = ?" , [$brand]);
+
+        if (!empty($BRANDS)){
+            $BRANDS->count = $BRANDS->count +1;
+            R::store($BRANDS);
+        }
+
+        if (empty($BRANDS)){
+            $url = translit_sef($brand);
+            $DATA = [
+                'name' => $brand,
+                'url' => $url,
+                'count' => 1,
+                'countview' => 1,
+            ];
+                $this->addnewBD("brands", $DATA);
+
+        }
+
+
+        return true;
     }
 
 
@@ -1659,7 +2056,6 @@ class Panel extends \APP\core\base\Model {
 
     public function workcategories($cat){
 
-        $categoryarray = [];
 
         foreach ($cat as $key => $val){
 
@@ -1680,7 +2076,11 @@ class Panel extends \APP\core\base\Model {
                     'countshop' => 1,
                     'countview' => 1,
                 ];
-                $categoryarray[] =  $this->addnewBD("category", $DATA);
+
+                $this->addnewBD("category", $DATA);
+                $categoriya = R::findOne("category", "WHERE name = ?" , [$val]);
+                $categoryarray[] = $categoriya->id;
+
             }
 
 

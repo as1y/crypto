@@ -30,27 +30,36 @@ class MainController extends AppController {
 
 
 
+        $couponsliseder =   $Panel->LoadCustomBanners([150, 95]);
+
+        $discountproduct =   $Panel->LoadTopDiscount();
 
 
-        $couponsliseder =   $Panel->LoadCustomBanners([1520]);
+        //Музыка и звук
+        $product2 =   $Panel->LoadProductCategory("2");
 
 
-        $couponsliseder2 =   $Panel->LoadCustomBanners([3159, 344]);
+        $product1 =   $Panel->LoadProductCategory("1");
+
+        $product3 =   $Panel->LoadProductCategory("5");
 
 
-        // GetShops
+//
+//
+//        $couponsliseder2 =   $Panel->LoadCustomBanners([3159, 344]);
+//
+//        // GetShops
+//        $widget8 =   $Panel->getShops(['limit' => 8]);
+//
+//
+//
+//        $widgetcoupons =   $Panel->getContentCoupons(['limit' => 10, 'sort' => 'time']);
+//        $widgetcoupons2 = $Panel->getContentCoupons(['limit' => 8, 'sort' => 'used']);
 
-        $widget8 =   $Panel->getShops(['limit' => 8]);
 
 
 
-        $widgetcoupons =   $Panel->getContentCoupons(['limit' => 10, 'sort' => 'time']);
-        $widgetcoupons2 = $Panel->getContentCoupons(['limit' => 8, 'sort' => 'used']);
-
-
-
-
-        $this->set(compact( 'vitrina', 'couponsliseder',  'couponsliseder2', 'widget8', 'widget5', 'widget4', 'widgetcoupons', 'widget20', 'widgetcoupons2', 'shops'));
+        $this->set(compact( 'discountproduct', 'couponsliseder' ,'product2', 'product1', 'product3'));
 
 
 

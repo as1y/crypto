@@ -35,6 +35,34 @@ function go( $url ) {
 }
 // Функция редирект при возвращении из формы через ajax
 
+function parsecsv($url){
+
+    if (($fp = fopen($url, "r")) !== FALSE) {
+        while (($data = fgetcsv($fp, 0, ";")) !== FALSE) {
+            $list[] = $data;
+        }
+        fclose($fp);
+    }
+
+
+    // Обработка массива
+    foreach ($list as $key=>$value){
+        if ($key == 0) continue;
+        foreach ($value as $k=>$v){
+            // Название раздела
+            $razdel = $list[0][$k];
+            // Массив в формате [razdel] = значение
+            $data[$razdel] = $v;
+        }
+        $MASS[] = $data;
+    }
+
+
+    return $MASS;
+
+}
+
+
 
 
 function redir($http = FALSE){
@@ -197,10 +225,37 @@ function clearurl($url){
 
 function obrezanie ($text, $symbols){
 
-    $result = mb_strimwidth($text, 0, $symbols, ".");
+    $result = mb_strimwidth($text, 0, $symbols, "...");
 
     return $result;
 
+}
+
+
+function calculatecashback($paymentsize, $price){
+
+    if (stristr($paymentsize, 'RUB')){
+        $summa = str_replace("RUB", "", $paymentsize);
+    }
+
+    if (stristr($paymentsize, '%')) {
+        $percent = str_replace("%", "", $paymentsize);
+        $summa = ($price/100)*$percent;
+    }
+
+    $cashback = round($summa/2);
+    if ($cashback < 1) $cashback = 1;
+
+   return  $cashback;
+
+}
+
+
+function raskladkapayment($paymentsize){
+    $a = explode('-', $paymentsize);
+    $a = $a[0];
+    $result = $a;
+    return $result;
 }
 
 
@@ -316,6 +371,13 @@ function gaUserId(){
 
 }
 
+function statuscashback($status){
+
+    if ($status == 1) echo '<span class="badge badge-warning">Ожидание вонаграждения от магазина</span>';
+    if ($status == 2) echo '<span class="badge badge-success">Кешбек зачислен</span>';
+
+}
+
 
 function delDir($dir) {
     $files = array_diff(scandir($dir), ['.','..']);
@@ -416,36 +478,70 @@ function fCURL($url, $PARAMS = [], $headers = []){
 
 }
 
-function validationpay($data, $type){
 
-    $data = trim($data);
-    $data = strip_tags($data);
-    $data = htmlspecialchars($data);
+
+function clearrequis($value){
+
+    $value = trim($value);
+    $value = strip_tags($value);
+    $value = htmlspecialchars($value);
+    $value = str_replace(" ", "", $value);
+
+    return $value;
+}
+
+
+
+function validationpay($type, $value){
+
+    $value = clearrequis($value);
 
     if ($type == "qiwi"){
-        $data = intval($data);
-        if (strlen($data) > 12) return "Qiwi кошелек не должен быть длиннее 10 символов";
-        if (strlen($data) < 5) return "Qiwi кошелек не должен быть длиннее 5 символов";
+        preg_match('/^\+\d{9,15}$/', $value, $matches);
+        if (!empty($matches)) return true;
+        if (empty($matches)) return false;
     }
 
 
     if ($type == "yamoney"){
-        $data = intval($data);
-        if (strlen($data) > 30) return "Яндекс.Деньги не должен быть длиннее 30 символов";
-        if (strlen($data) < 5) return "Яндекс.Деньги  не должен быть длиннее 5 символов";
+        preg_match('/^41001[0-9]{7,11}$/', $value, $matches);
+        if (!empty($matches)) return true;
+        if (empty($matches)) return false;
     }
 
-    if ($type == "card"){
-        $data = intval($data);
-        if (strlen($data) > 30) return "Номер карты не должен быть длиннее 30 символов";
-        if (strlen($data) < 5) return "Номер карты  не должен быть длиннее 5 символов";
+    if ($type == "cardvisa"){
+        preg_match('/^([45]{1}[\d]{15}|[6]{1}[\d]{17})$/', $value, $matches);
+        if (!empty($matches)) return true;
+        if (empty($matches)) return false;
     }
+
+
+    if ($type == "cardmaster"){
+        preg_match('/^([45]{1}[\d]{15}|[6]{1}[\d]{17})$/', $value, $matches);
+        if (!empty($matches)) return true;
+        if (empty($matches)) return false;
+    }
+
+    if ($type == "cardmir"){
+        preg_match('/^([245]{1}[\d]{15}|[6]{1}[\d]{17})$/', $value, $matches);
+        if (!empty($matches)) return true;
+        if (empty($matches)) return false;
+    }
+
+    if ($type == "cardukr"){
+        preg_match('/^([45]{1}[\d]{15}|[6]{1}[\d]{17})$/', $value, $matches);
+        if (!empty($matches)) return true;
+        if (empty($matches)) return false;
+    }
+
+
 
 
 
 
     return true;
 }
+
 
 
 // Форматирование цен.

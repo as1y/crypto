@@ -32,19 +32,35 @@ class UpdateController extends AppController {
             }
             // Если нет файла, то создаем
 
-
-
             $campanings = $Panel->getPrograms($token);
 
-
             $Panel->addMagazin($campanings, $token);
-
             $Panel->updatecheck("company");
+
+
             echo "<h1>КОМПАНИИ ОБНОВЛЕНЫ!</h1>";
 
         }
 
 
+        if (!empty($_GET) && ($_GET['action'] == "updateproduct")){
+
+
+            $feed = $Panel->loadfeedCSV();
+            $Panel->addfeedBD($feed);
+
+
+//            $Panel->removeFinishCoupon();
+//            $Panel->addCoupons($token);
+
+
+
+            $Panel->updatecheck("product");
+            echo "<h1>ТОВАРЫ ОБНОВЛЕНЫ!</h1>";
+
+
+
+        }
 
 
 

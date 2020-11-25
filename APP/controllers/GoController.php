@@ -15,9 +15,10 @@ class GoController extends AppController {
 
 
 
-        if (!empty($_GET['coupon'])){
+        if (!empty($_GET['product'])){
 
-            $Panel->RedirCoupon($_GET['coupon']);
+
+            $Panel->RedirCoupon($_GET['product']);
 
         }
 

@@ -13,7 +13,16 @@ function extractcategories($categories){
 
 foreach ($categories as $key=>$val){
 
-    if (!empty($val['parent'])) $result[] = $val['name'];
+    if (empty($val['parent']) && empty($val['name']))  {
+        $result[] = $val;
+        continue;
+    }
+
+    if (empty($val['parent']) && !empty($val['name']) )  $result[] = $val['name'];
+
+    if (!empty($val['parent'])) {
+        $result[] = $val['name'];
+    }
 
 }
 
@@ -307,6 +316,17 @@ function generateStartEndPage($PAGESLIST, $Pages)
 
 }
 
+
+
+function paystatus ($status){
+
+    if  ($status == 0) return "<span class='badge badge-warning'>В ПРОЦЕССЕ</span>";
+    if  ($status == 1) return "<span class='badge badge-success'>ИСПОЛНЕН</span>";
+
+}
+
+
+
 function generetuCouponinCode($coupons, $ViewPage, $CouponsPerPage){
 
     $start = ($ViewPage * $CouponsPerPage) - ($CouponsPerPage - 1) ;
@@ -330,86 +350,83 @@ function generetuCouponinCode($coupons, $ViewPage, $CouponsPerPage){
 
 function renderFilter($DATA){
 
-
     ?>
-<!--    КАТЕГОРИИ-->
-    <div class="col-md-12">
-        <div class="cbx-sidebar">
-            <div class="widget widget-couponz-slider-filter">
-                <div class="row">
-
-                    <div class="col-md-3">
-                        <h4>ВЫБРАТЬ БРЕНД</h4>
-                        <select class="selectpicker" id = "CategoryContainer" onchange="ChangeFilter()" name="companies" data-live-search="true">
-                            <option style="color: darkred" value=""  >Все бренды...</option>
-                            <?php foreach ($DATA['catalogCompany'] as $key=>$val) :
-
-                                ?>
-                                <?php if ($val['select'] && !empty($val['name'])) :?>
-                                    <option  selected value="<?=$val['url']?>" ><?=$val['name']?></option>
-                                <?php endif;?>
-
-                                <?php if (!$val['select']) :?>
-                                    <option value="<?=$val['url']?>" ><?=$val['name']?></option>
-                                <?php endif;?>
-                            <?php endforeach;?>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <h4>ВЫБРАТЬ КАТЕГОРИЮ</h4>
-                        <select class="selectpicker" id = "CategoryContainer" onchange="ChangeFilter()" name="category" data-live-search="true">
-                            <option style="color: darkred" value="" >Все категории...</option>
-                            <?php foreach ($DATA['catalogCategories'] as $key=>$val) :?>
-                                <?php if ($val['select']) :?>
-                                    <option  selected value="<?=$val['url']?>" ><?=$val['name']?></option>
-                                <?php endif;?>
-
-                                <?php if (!$val['select']) :?>
-                                    <option value="<?=$val['url']?>" ><?=$val['name']?></option>
-                                <?php endif;?>
-                            <?php endforeach;?>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <h4>ТИП СКИДКИ</h4>
-                        <select class="selectpicker"  onchange="ChangeFilter()" name="type" data-live-search="true">
-                            <option value="" >ВСЕ ТИПЫ</option>
-
-                            <?php if (!empty($DATA['catalogType']['action'])) :?>
-                                <option value="action" <?= ($DATA['catalogType']['select'] == "action") ? "selected" : "" ?>  >Только скидки - (<?=$DATA['catalogType']['action']?>)</option>
-                            <?php endif;?>
-
-                            <?php if (!empty($DATA['catalogType']['promocode'])) :?>
-                                <option value="promocode" <?= ($DATA['catalogType']['select'] == "promocode") ? "selected" : "" ?> >Только промокоды -  (<?=$DATA['catalogType']['promocode']?>)</option>
-                            <?php endif;?>
-                        </select>
-                    </div>
 
 
-                </div>
+    <aside class="widget widget--vendor">
+        <h5 class="widget-title">КАТЕГОРИЯ</h5>
+        <div class="form-group">
+            <select onchange="ChangeFilter()" name="category" class="ps-select">
+                <option style="color: red" value="" >Все категории</option>
+     <?php foreach ($DATA['catalogCategories'] as $key=>$val) :?>
 
+         <?php if ($val['select'] && !empty($val['name'])) :?>
+             <option  selected value="<?=$val['id']?>" ><?=$val['name']?></option>
+         <?php endif;?>
 
+         <?php if (!$val['select']) :?>
+             <option value="<?=$val['id']?>" ><?=$val['name']?></option>
+         <?php endif;?>
 
-
-
-
-            </div>
-
-
-
-
+    <?php endforeach;?>
+            </select>
         </div>
-    </div>
+    </aside>
 
+    <aside class="widget widget--vendor">
+        <h5 class="widget-title">МАГАЗИН</h5>
+        <div class="form-group">
+            <select onchange="ChangeFilter()" name="company" class="ps-select">
+                <option style="color: red" value="" >Все магазины</option>
+                <?php foreach ($DATA['catalogCompany'] as $key=>$val) :?>
+
+
+                    <?php if ($val['select'] && !empty($val['name'])) :?>
+                        <option  selected value="<?=$val['id']?>" ><?=$val['name']?></option>
+                    <?php endif;?>
+
+                    <?php if (!$val['select']) :?>
+                        <option value="<?=$val['id']?>" ><?=$val['name']?></option>
+                    <?php endif;?>
+
+
+
+                <?php endforeach;?>
+            </select>
+        </div>
+    </aside>
+
+
+<!--    <aside class="widget widget--vendor">-->
+<!--        <h5 class="widget-title">БРЕНД</h5>-->
+<!--        <div style=" height:300px; overflow:auto; padding-left: 0.5rem !important; border:solid 1px #818181;">-->
+<!--            --><?php //foreach ($DATA['catalogBrands'] as $key=>$val) :?>
+<!--                <div class="ps-checkbox">-->
+<!--                    <input class="form-control" type="checkbox" id="brand---><?//=$val['id']?><!--" name="brand">-->
+<!--                    <label for="brand---><?//=$val['id']?><!--">--><?//=$val['name']?><!-- (--><?//=$val['count']?><!--)</label>-->
+<!--                </div>-->
+<!--            --><?php //endforeach;?>
+<!--        </div>-->
+<!--    </aside>-->
+
+
+
+<!--    <figure>-->
+<!--        <h4 class="widget-title">ЦЕНА</h4>-->
+<!--        <div id="nonlinear"></div>-->
+<!--        <p class="ps-slider__meta">Price:<span class="ps-slider__value">$<span class="ps-slider__min"></span></span>-<span class="ps-slider__value">$<span class="ps-slider__max"></span></span></p>-->
+<!--    </figure>-->
+<!---->
+<!--    -->
+<!--    <figure>-->
+<!--        <h4 class="widget-title">СКИДКА</h4>-->
+<!--        <div id="nonlinear"></div>-->
+<!--        <p class="ps-slider__meta">Price:<span class="ps-slider__value">$<span class="ps-slider__min"></span></span>-<span class="ps-slider__value">$<span class="ps-slider__max"></span></span></p>-->
+<!--    </figure>-->
 
 
 
     <?php
-
-
-
     return true;
 
 }
@@ -573,6 +590,72 @@ function AuthAdmitad(){
 
 
 }
+
+
+function rendersmallproduct($product){
+    ?>
+
+
+    <div class="ps-product">
+        <div class="ps-product__thumbnail"><a href="/product/<?=$product['id']?>/<?=$product['uri']?>"><img src="<?=$product['picture']?>" alt=""></a>
+
+    <?php if ($product['percentdiscount']> 10): ?>
+            <div class="ps-product__badge">-<?=$product['percentdiscount']?>%</div>
+    <?php endif;?>
+
+<!--            <ul class="ps-product__actions">-->
+<!--                <li><a href="#" data-toggle="tooltip" data-placement="top" title="Add To Cart"><i class="icon-bag2"></i></a></li>-->
+<!--                <li><a href="#" data-placement="top" title="Quick View" data-toggle="modal" data-target="#product-quickview"><i class="icon-eye"></i></a></li>-->
+<!--                <li><a href="#" data-toggle="tooltip" data-placement="top" title="Add to Whishlist"><i class="icon-heart"></i></a></li>-->
+<!--                <li><a href="#" data-toggle="tooltip" data-placement="top" title="Compare"><i class="icon-chart-bars"></i></a></li>-->
+<!--            </ul>-->
+        </div>
+
+        <div class="ps-product__container"><a class="ps-product__vendor" href="#"><?=$product->companies['name']?></a>
+
+            <div class="ps-product__content"><a class="ps-product__title" href="/product/<?=$product['id']?>/<?=$product['uri']?>"><?=$product['name']?></a>
+
+<!--                <div class="ps-product__rating">-->
+<!--                    <select class="ps-rating" data-read-only="true">-->
+<!--                        <option value="1">1</option>-->
+<!--                        <option value="1">2</option>-->
+<!--                        <option value="1">3</option>-->
+<!--                        <option value="1">4</option>-->
+<!--                        <option value="2">5</option>-->
+<!--                    </select><span>01</span>-->
+<!--                </div>-->
+                <?php if ($product['percentdiscount']> 10): ?>
+                    <p class="ps-product__price sale"><?=round($product['price'])?>₽ <del><?=round($product['oldprice'])?>₽ </del></p>
+                 <?php endif;?>
+
+                <?php if ($product['percentdiscount'] <= 10): ?>
+                    <p class="ps-product__price"><?=round($product['price'])?>₽</p>
+                <?php endif;?>
+
+            </div>
+
+            <div class="ps-product__content hover"><a class="ps-product__title" href="/product/<?=$product['id']?>/<?=$product['uri']?>"><?=$product['name']?></a>
+    <?php if ($product['percentdiscount']> 10): ?>
+                <p class="ps-product__price sale"><?=round($product['price'])?>₽ <del><?=round($product['oldprice'])?>₽ </del></p>
+    <?php endif;?>
+
+
+    <?php if ($product['percentdiscount'] <= 10): ?>
+        <p class="ps-product__price"><?=round($product['price'])?>₽</p>
+    <?php endif;?>
+
+            </div>
+
+
+        </div>
+    </div>
+
+
+
+    <?php
+}
+
+
 
 function renderCoupon($coupon){
     ?>
