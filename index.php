@@ -61,17 +61,6 @@ session_start();
 $router = new Router;
 // ПУТИ ЗАДАЮТ НАДО УТОЧНИТЬ КАК РАБОТАЕТ
 $router->add( 'user/login', ['controller'=>'User', 'action'=>'index']);
-$router->add( '^category/(?P<alias>[a-z-]+)$', ['controller'=>'Category', 'action'=>'index']);
-
-//$router->add( '^promocode/(?P<alias>[a-z-]+)/?(?P<alias2>[a-z-]+)?$', ['controller'=>'Promocode', 'action'=>'index']);
-
-
-$router->add( '^shop/(?P<alias>[a-z-]+)/?(?P<alias2>[a-z-]+)?$', ['controller'=>'Shop', 'action'=>'index']);
-
-
-$router->add( '^product/(?P<alias>[0-9-]+)/?(?P<alias2>[a-z-]+)?$', ['controller'=>'Product', 'action'=>'index']);
-
-
 
 
 $router->add( '^page/(?P<action>[a-z-]+)/(?P<alias>[a-z-]+)$', ['controller'=>'Page']);
