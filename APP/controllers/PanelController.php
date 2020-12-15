@@ -36,9 +36,12 @@ class PanelController extends AppController {
         \APP\core\base\View::setBreadcrumbs($BREADCRUMBS);
 
 
-        var_dump (\ccxt\Exchange::$exchanges); // print a list of all available exchange classes
+      //  var_dump (\ccxt\Exchange::$exchanges); // print a list of all available exchange classes
 
-        echo "zzz";
+        $binance = new \ccxt\binance ();
+        show($binance->load_markets ());
+
+
 
 //        $this->set(compact('companiestoday', 'conversiontodaty'));
 
