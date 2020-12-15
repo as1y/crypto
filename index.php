@@ -8,9 +8,9 @@ define('WWW', __DIR__);
 // Переменные для приложения
 define('BASEAVATAR', '/assets/oper1.jpg');
 define('BASELOGO', '/uploads/user_logo/baselogo.jpg');
-define('APPNAME', 'DISCOUNT.MARKET');
+define('APPNAME', 'CRYPTOFARM');
 define('MORDA', true);
-define('description', 'Каталог действующих промокодов. Проверка каждый день. Промокоды, акции, скидки, купоны');
+define('description', 'CRYPTOFARM');
 // Переменные для приложения
 
 

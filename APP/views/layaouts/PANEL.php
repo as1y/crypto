@@ -199,72 +199,9 @@
                         <li class="nav-item">
                             <a href="/panel/" class="nav-link <?=isset($active['index']) ? $active['index'] : ''; ?>">
                                 <i class="icon-home4"></i>
-                                <span>	Лог Конверсий </span>
+                                <span>	СВОДКА </span>
                             </a>
                         </li>
-
-                        <li class="nav-item">
-                            <a href="/panel/update" class="nav-link <?=isset($active['update']) ? $active['update'] : ''; ?>">
-                                <i class="icon-home4"></i>
-                                <span>	Обновление </span>
-                            </a>
-                        </li>
-
-                        <li class="nav-item-header">
-                            <div class="text-uppercase font-size-sm line-height-sm">РЕКЛАМА</div>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="/panel/generatelink" class="nav-link <?=isset($active['generatelink']) ? $active['generatelink'] : ''; ?>">
-                                <i class="icon-link"></i>
-                                <span>	Генератор ссылок </span>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="/panel/generateadvert" class="nav-link <?=isset($active['generateadvert']) ? $active['generateadvert'] : ''; ?>">
-                                <i class="icon-file-text2"></i>
-                                <span>	Генератор GOOGLE </span>
-                            </a>
-                        </li>
-
-
-                        <li class="nav-item">
-                            <a href="/panel/generateadvertya" class="nav-link <?=isset($active['generateadvertya']) ? $active['generateadvertya'] : ''; ?>">
-                                <i class="icon-file-text2"></i>
-                                <span>	Генератор ЯНДЕКС </span>
-                            </a>
-                        </li>
-
-
-                        
-                        <li class="nav-item-header">
-                            <div class="text-uppercase font-size-sm line-height-sm">КАСТОМНЫЕ КУПОНЫ</div>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="/panel/withoutcoupons" class="nav-link <?=isset($active['withoutcoupons']) ? $active['withoutcoupons'] : ''; ?>">
-                                <i class="icon-question3"></i>
-                                <span>	Все магазины </span>
-                            </a>
-                        </li>
-
-
-                        <li class="nav-item">
-                            <a href="/panel/listcoupons" class="nav-link <?=isset($active['listcoupons']) ? $active['listcoupons'] : ''; ?>">
-                                <i class="icon-list-numbered"></i>
-                                <span>	Список купонов </span>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="/panel/addcoupon" class="nav-link <?=isset($active['addcoupon']) ? $active['addcoupon'] : ''; ?>">
-                                <i class="icon-plus3"></i>
-                                <span>	Добавить купон </span>
-                            </a>
-                        </li>
-
-
 
 
 

@@ -1,93 +1,139 @@
-<div class="ps-page--my-account">
-    <div class="ps-breadcrumb">
-        <div class="container">
-            <ul class="breadcrumb">
-                <li><a href="/">Главная</a></li>
-                <li>Регистрация</li>
-            </ul>
-        </div>
-    </div>
-    <div class="ps-my-account-2">
-        <div class="container">
 
-            <?php if(isset($_SESSION['errors'])): ?>
-                <div class="alert alert-danger alert-dismissible">
-                    <button type="button" class="close" data-dismiss="alert"><span>×</span></button>
-                    <span class="font-weight-semibold">Ошибка!</span> <br><?=$_SESSION['errors']; unset($_SESSION['errors']);?>
-                </div>
-            <?php endif;?>
+<?php
 
-            <?php if(isset($_SESSION['success'])): ?>
-                <div class="alert alert-success alert-dismissible">
-                    <button type="button" class="close" data-dismiss="alert"><span>×</span></button>
-                    <span class="font-weight-semibold">Успех!</span> <?=$_SESSION['success']; unset($_SESSION['success']);?>
-                </div>
+if (!empty($_GET) && $_GET['role'] == "R") $_SESSION['form_data']['role'] = "R";
 
-            <?php endif;?>
+?>
 
+<!-- Registration form -->
+<form action="/user/register" method="post" class="login-form" style="width: 30rem">
+    <div class="card mb-0">
+        <div class="card-body">
+            <div class="text-center mb-3">
+                <h5 class="mb-0">Регистрация</h5>
+                <span class="d-block text-muted"><?=APPNAME?> - биржа операторов на телефоне</span>
+            </div>
 
-            <div class="ps-section__wrapper">
-                <div class="ps-section__left">
-
-
-                    <div class="ps-tabs">
-
-
-                        <form class="ps-form--account ps-tab-root" action="/user/register" method="post">
-                            <div class="ps-tab active" id="sign-in">
-                                <div class="ps-form__content">
-                                    <h5>Регистрация</h5>
-                                    <div class="form-group">
-                                        <input class="form-control" type="email" name="email"  placeholder="E-mail" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <input class="form-control" type="password" name="password" placeholder="Пароль">
-                                    </div>
-                                    <div class="form-group">
-                                        <input class="form-control" type="password" name="password2" placeholder="Повторите пароль">
-                                    </div>
-
-
-                                    <div class="form-group submit">
-                                        <button class="ps-btn ps-btn--fullwidth">Регистрация</button>
-                                    </div>
-                                </div>
-
-
-                            </div>
-
-                        </form>
-
-
-
-
-                    </div>
-                    </form>
+            <div class="form-group">
+                <label class="d-block font-weight-semibold">РЕГИСТРАЦИЯ КАК</label>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label">
+                        <input type="radio" class="form-check-input" onchange="changerole()" name="role" value="O" <?=( empty($_SESSION['form_data']['role']) || $_SESSION['form_data']['role'] == "O" ) ? 'checked' : '';?>>
+                        <i class="icon-headphones"></i> &nbsp; Я ОПЕРАТОР
+                    </label>
                 </div>
 
-
-
-
-
-                <div class="ps-section__right">
-                    <div class="ps-section__coupon"><span>$25</span>
-                        <aside>
-                            <h5>A small gift for your first purchase</h5>
-                            <p>Martfury give $25 as a small gift for your first purchase. Welcome to Martfury!</p>
-                        </aside>
-                    </div>
-                    <br>
-                    <figure class="ps-section__desc">
-                        <p>MartFury Buyer Protection has you covered from click to delivery. Sign up or sign in and you will be able to:</p>
-                        <ul class="ps-list">
-                            <li><i class="icon-credit-card"></i><span>SPEED YOUR WAY THROUGH CHECKOUT</span></li>
-                            <li><i class="icon-clipboard-check"></i><span>TRACK YOUR ORDERS EASILY</span></li>
-                            <li><i class="icon-bag2"></i><span>KEEP A RECORD OF ALL YOUR PURCHASES</span></li>
-                        </ul>
-                    </figure>
-
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label">
+                        <input type="radio" class="form-check-input" onchange="changerole()" name="role" value="R" <?=( !empty($_SESSION['form_data']['role']) && $_SESSION['form_data']['role'] == "R" ) ? 'checked' : '';?>>
+                        <i class="icon-coin-dollar"></i> &nbsp; Я ЗАКАЗЧИК
+                    </label>
                 </div>
             </div>
+
+
+
+
+            <div class="form-group form-group-feedback form-group-feedback-left">
+                <input type="text" name="username" value="<?=isset($_SESSION['form_data']['username']) ? h($_SESSION['form_data']['username']) : '';?>" class="form-control" placeholder="Имя Фамилия">
+                <div class="form-control-feedback">
+                    <i class="icon-user-check text-muted"></i>
+                </div>
+            </div>
+
+            <div id="phone" <?=( !empty($_SESSION['form_data']['role']) && $_SESSION['form_data']['role'] == "R" ) ? '' : 'style="display: none;"';?>  class="form-group form-group-feedback form-group-feedback-left">
+                <input type="text" name="phone" value="<?=isset($_SESSION['form_data']['phone']) ? h($_SESSION['form_data']['phone']) : '';?>" class="form-control" placeholder="Телефон">
+                <div class="form-control-feedback">
+                    <i class="icon-phone text-muted"></i>
+                </div>
+                <span class="d-block text-muted">Звоним только чтобы помочь начать работу в сервисе</span>
+            </div>
+
+
+            <div id="contact" <?=( !empty($_SESSION['form_data']['role']) && $_SESSION['form_data']['role'] == "R" ) ? 'style="display: none;"' : '';?>  class="form-group form-group-feedback form-group-feedback-left">
+                <input type="text" name="contact" value="<?=isset($_SESSION['form_data']['contact']) ? h($_SESSION['form_data']['contact']) : '';?>" class="form-control" placeholder="SKYPE или TELEGRAMM">
+                <div class="form-control-feedback">
+                    <i class="icon-bubble-dots4 text-muted"></i>
+                </div>
+                <span class="d-block text-muted">Наставник свяжется только чтобы помочь разобраться в сервисе</span>
+            </div>
+
+
+
+            <div class="form-group form-group-feedback form-group-feedback-left">
+                <input type="email" name="email" value="<?=isset($_SESSION['form_data']['email']) ? h($_SESSION['form_data']['email']) : '';?>" class="form-control" placeholder="Email">
+                <div class="form-control-feedback">
+                    <i class="icon-mention text-muted"></i>
+                </div>
+            </div>
+
+            <div class="form-group form-group-feedback form-group-feedback-left">
+                <input type="password" name="password" value="<?=isset($_SESSION['form_data']['password']) ? h($_SESSION['form_data']['password']) : '';?>" class="form-control" placeholder="Пароль">
+                <div class="form-control-feedback">
+                    <i class="icon-user-lock text-muted"></i>
+                </div>
+            </div>
+
+            <div class="form-group form-group-feedback form-group-feedback-left">
+                <input type="password" name="password2" value="<?=isset($_SESSION['form_data']['password2']) ? h($_SESSION['form_data']['password2']) : '';?>" class="form-control" placeholder="Повторите пароль">
+                <div class="form-control-feedback">
+                    <i class="icon-user-lock text-muted"></i>
+                </div>
+            </div>
+
+            <div class="form-group text-center text-muted content-divider">
+                <span class="px-2">Дополнительно</span>
+            </div>
+
+            <div class="form-group">
+                <div class="form-check">
+                    <label class="form-check-label">
+                        <input type="checkbox" name="terms"  checked class="form-input-styled" data-fouc>
+                        Принимаю <a href="#">условия использования</a>
+                    </label>
+                </div>
+            </div>
+
+
+
+            <button type="submit" class="btn bg-teal-400 btn-block">Регистрация <i class="icon-circle-right2 ml-2"></i></button>
         </div>
     </div>
-</div>
+</form>
+
+
+
+<script>
+    function changerole() {
+
+
+        var role = $('[name=role]:checked').val();
+
+        if (role == "R"){
+            $('#phone').show();
+            $('#contact').hide();
+
+        }
+
+
+        if (role == "O"){
+            $('#phone').hide();
+            $('#contact').show();
+
+        }
+
+
+    }
+
+
+
+
+</script>
+
+
+<?php if (isset($_SESSION['form_data']) ) unset($_SESSION['form_data'])?>
+
+
+
+
+

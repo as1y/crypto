@@ -1,12 +1,11 @@
 <?php
 return [
     'LAYOUT' => 'MAIN',
-    'DOMAIN' => 'dlead.ru',
-//    'UA' => 'UA-173141725-3',
+    'DOMAIN' => 'MONEY',
     'USERTABLE' => 'users',
     'BASEMAIL' => [
-        'name' => 'DLEAD.RU',
-        'email' => 'dlead@dlead.ru'
+        'name' => 'MONEY',
+        'email' => 'info@dlead.ru'
     ],
 
     'db' => [

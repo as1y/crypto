@@ -6,14 +6,14 @@ use APP\models\User;
 
 class UserController extends AppController
 {
-	public $layaout = 'MAIN'; //Перераспределяем массив layaout
+	public $layaout = 'USER'; //Перераспределяем массив layaout
     public $BreadcrumbsControllerLabel = APPNAME;
     public $BreadcrumbsControllerUrl = "/";
 
 	public function registerAction()
 	{
 
-		if( isset($_SESSION['ulogin']['id']) ) redir('/buyer/');
+		if( isset($_SESSION['ulogin']['id']) ) redir('/panel/');
 
         $META = [
             'title' => 'Регистрация пользователя',
@@ -25,6 +25,22 @@ class UserController extends AppController
         $BREADCRUMBS['DATA'][] = ['Label' => "Регистрация пользователя"];
 
 
+        $ASSETS[] = ["js" => "/global_assets/js/plugins/forms/styling/uniform.min.js"];
+        $ASSETS[] = ["js" => "/global_assets/js/plugins/forms/styling/switchery.min.js"];
+        $ASSETS[] = ["js" => "/global_assets/js/plugins/forms/styling/switch.min.js"];
+        $ASSETS[] = ["js" => "/global_assets/js/plugins/forms/validation/validate.min.js"];
+        $ASSETS[] = ["js" => "/global_assets/js/plugins/forms/styling/uniform.min.js"];
+        $ASSETS[] = ["js" => "/assets/js/login_validation.js"];
+
+
+
+        $ASSETS[] = ["js" => "/global_assets/js/demo_pages/form_checkboxes_radios.js"];
+
+
+
+
+
+         \APP\core\base\View::setAssets($ASSETS);
         \APP\core\base\View::setMeta($META);
         \APP\core\base\View::setBreadcrumbs($BREADCRUMBS);
 
@@ -32,8 +48,7 @@ class UserController extends AppController
 
         if ($_POST){
 
-
-            $validate =  $user->validateregistration($_POST);
+              $validate =  $user->validateregistration($_POST);
 
 
             if(!$validate || !$user->checkUniq(CONFIG['USERTABLE'], $_POST['email'] ))
@@ -70,8 +85,9 @@ class UserController extends AppController
 
                 $user->login(CONFIG['USERTABLE']);
 
-                redir('/buyer/');
 
+                if ($_SESSION['ulogin']['role'] == "R") redir('/panel/operator/');
+                if ($_SESSION['ulogin']['role'] == "O") redir('/operator/');
 
 
             }
@@ -105,32 +121,30 @@ class UserController extends AppController
 
 	public function indexAction()
 	{
-        $user = new User;
+
 
 	    //Если юзер залогинен, то редиректим его на панель
-		if( isset($_SESSION['ulogin']['id']) ) redir('/buyer/');
+		if( isset($_SESSION['ulogin']['id']) ) redir('/panel/');
 
 		if($_POST){
 
+			$user = new User;
+
+			if($user->login(CONFIG['USERTABLE'])){
+				//АВТОРИЗАЦИЯ
+
+                redir('/panel/');
 
 
-            if($user->login(CONFIG['USERTABLE'])){
-                //АВТОРИЗАЦИЯ
-                redir('/buyer/');
-                //АВТОРИЗАЦИЯ
-            }
-            else
-            {
-                $_SESSION['errors'] = "Логин/Пароль введены не верно";
+				//АВТОРИЗАЦИЯ
+			}
+			else
+			{
+				$_SESSION['errors'] = "Логин/Пароль введены не верно";
                 redir('/user/');
 
-            }
-
-
-
+			}
 		}
-
-
 
 
         $META = [
@@ -145,6 +159,16 @@ class UserController extends AppController
         $BREADCRUMBS['HOME'] = ['Label' => $this->BreadcrumbsControllerLabel, 'Url' => $this->BreadcrumbsControllerUrl];
         $BREADCRUMBS['DATA'][] = ['Label' => "Логин"];
         \APP\core\base\View::setBreadcrumbs($BREADCRUMBS);
+
+
+
+        $ASSETS[] = ["js" => "/global_assets/js/plugins/forms/validation/validate.min.js"];
+        $ASSETS[] = ["js" => "/global_assets/js/plugins/forms/styling/uniform.min.js"];
+        $ASSETS[] = ["js" => "/assets/js/login_validation.js"];
+
+        \APP\core\base\View::setAssets($ASSETS);
+
+
 
 
 

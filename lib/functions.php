@@ -35,34 +35,6 @@ function go( $url ) {
 }
 // Функция редирект при возвращении из формы через ajax
 
-function parsecsv($url){
-
-    if (($fp = fopen($url, "r")) !== FALSE) {
-        while (($data = fgetcsv($fp, 0, ";")) !== FALSE) {
-            $list[] = $data;
-        }
-        fclose($fp);
-    }
-
-
-    // Обработка массива
-    foreach ($list as $key=>$value){
-        if ($key == 0) continue;
-        foreach ($value as $k=>$v){
-            // Название раздела
-            $razdel = $list[0][$k];
-            // Массив в формате [razdel] = значение
-            $data[$razdel] = $v;
-        }
-        $MASS[] = $data;
-    }
-
-
-    return $MASS;
-
-}
-
-
 
 
 function redir($http = FALSE){
@@ -77,15 +49,8 @@ function redir($http = FALSE){
 // Екзит из интерфейса
 
 
-// СООБЩЕНИЕ ЧЕРЕЗ PHP
-function mes ( $mess ) {
-	echo ( '
-	<script>
-		alert(" '.$mess. '");
-	</script>
-		 ') ;
-}
-// СООБЩЕНИЕ ЧЕРЕЗ PHP
+
+
 function dumpf($PARAM){
 	file_put_contents($_SERVER["DOCUMENT_ROOT"] .'/log.log', var_export($PARAM, true), FILE_APPEND);
 }
@@ -97,6 +62,8 @@ function hurl($url){
 	$url = str_replace("www.", "", $url); // Убираем https
 	return $url;
 }
+
+
 // Генерируем рандом символы 30 шт
 function random_str( $num = 30 ) {
 	return substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, $num);
@@ -157,72 +124,6 @@ function monthtoday(){
     return $d['month'];
 }
 
-
-
-function getOstatok ($expiration_date){
-
-    $d = date_parse_from_format('Y-m-d', $expiration_date);
-    $date1 = mktime(0, 0, 0, $d['month'], $d['day'], $d['year']);
-    $date1 = $date1 + 86300;
-    $datetoday = time();
-    $ostatok = $date1 - $datetoday;
-    $ostatokday = round($ostatok/86400);
-
-    return $ostatokday;
-}
-
-
-function calculate_exp($expiration_date){
-
-
-    if (!$expiration_date){
-        $answer = "<font color='green'>БЕЗ ЛИМИТА</font>" ;
-        return $answer;
-    }
-
-    $ostatokday = getOstatok($expiration_date);
-
-
-    if ($ostatokday < 0 )return $answer = "<font color='red'>ПРОСРОЧЕН</font>" ;
-    if ($ostatokday == 0) return $answer = "<font color='red'> СЕГОДНЯ! </font>" ;
-    if ($ostatokday == 1)  return $answer = "<font color='red'>ЗАВТРА</font>";
-    if ($ostatokday == 2) return $answer = $ostatokday." дня";
-    if ($ostatokday == 3) return $answer = $ostatokday." дня";
-
-//    if ($ostatokday > 30) return  $answer = date_parse_from_format('Y-m-d', $expiration_date);
-//    if ($ostatokday > 60) return   $answer = date_parse_from_format('Y-m-d', $expiration_date);
-
-     return $answer = date("d-m-Y", strtotime($expiration_date));
-
-
-}
-
-
-
-function validatebanner($WHATNEED, $WHATHAVE){
-
-    if ($WHATNEED['w']*2.2 < $WHATHAVE['w']) return false;
-    if ($WHATNEED['w'] > $WHATHAVE['w']*1.5) return false;
-
-    if ($WHATNEED['h']*2.2 < ($WHATHAVE['h'])) return false;
-    if ($WHATNEED['h'] > ($WHATHAVE['h']*1.5)) return false;
-
-    return true;
-
-}
-
-function clearurl($url){
-
-    $url = str_replace("https://", "", $url);
-    $url = str_replace("http://", "", $url);
-    $url = str_replace("/", "", $url);
-    $url = str_replace("www.", "", $url);
-    $url = str_replace(".com", "", $url);
-    $url = str_replace(".ru", "", $url);
-    $url = str_replace(".net", "", $url);
-    return $url;
-}
-
 function obrezanie ($text, $symbols){
 
     $result = mb_strimwidth($text, 0, $symbols, "...");
@@ -230,87 +131,6 @@ function obrezanie ($text, $symbols){
     return $result;
 
 }
-
-
-function calculatecashback($paymentsize, $price){
-
-    if (stristr($paymentsize, 'RUB')){
-        $summa = str_replace("RUB", "", $paymentsize);
-    }
-
-    if (stristr($paymentsize, '%')) {
-        $percent = str_replace("%", "", $paymentsize);
-        $summa = ($price/100)*$percent;
-    }
-
-    $cashback = round($summa/2);
-    if ($cashback < 1) $cashback = 1;
-
-   return  $cashback;
-
-}
-
-
-function raskladkapayment($paymentsize){
-    $a = explode('-', $paymentsize);
-    $a = $a[0];
-    $result = $a;
-    return $result;
-}
-
-
-
-function translitengrus($input){
-    $gost = array(
-        "a"=>"а","b"=>"б","v"=>"в","g"=>"г","d"=>"д","e"=>"е","yo"=>"ё",
-        "j"=>"ж","z"=>"з","i"=>"и","i"=>"й","k"=>"к",
-        "l"=>"л","m"=>"м","n"=>"н","o"=>"о","p"=>"п","r"=>"р","s"=>"с","t"=>"т",
-        "y"=>"у","f"=>"ф","h"=>"х","c"=>"ц",
-        "ch"=>"ч","sh"=>"ш","sh"=>"ш","i"=>"ы","e"=>"е","u"=>"у","ya"=>"я","A"=>"А","B"=>"Б",
-        "V"=>"В","G"=>"Г","D"=>"Д", "E"=>"Е","Yo"=>"Ё","J"=>"Ж","Z"=>"З","I"=>"И","I"=>"Й","K"=>"К","L"=>"Л","M"=>"М",
-        "N"=>"Н","O"=>"О","P"=>"П",
-        "R"=>"Р","S"=>"С","T"=>"Т","Y"=>"Ю","F"=>"Ф","H"=>"Х","C"=>"Ц","Ch"=>"Ч","Sh"=>"Ш",
-        "Sh"=>"Щ","I"=>"Ы","E"=>"Е", "U"=>"У","Ya"=>"Я","'"=>"ь","'"=>"Ь","''"=>"ъ","''"=>"Ъ","j"=>"ї","i"=>"и","g"=>"ґ",
-        "ye"=>"є","J"=>"Ї","I"=>"І",
-        "G"=>"Ґ","YE"=>"Є"
-    );
-    return strtr($input, $gost);
-}
-
-function translit_sef($value)
-{
-    $converter = array(
-        'а' => 'a',    'б' => 'b',    'в' => 'v',    'г' => 'g',    'д' => 'd',
-        'е' => 'e',    'ё' => 'e',    'ж' => 'zh',   'з' => 'z',    'и' => 'i',
-        'й' => 'y',    'к' => 'k',    'л' => 'l',    'м' => 'm',    'н' => 'n',
-        'о' => 'o',    'п' => 'p',    'р' => 'r',    'с' => 's',    'т' => 't',
-        'у' => 'u',    'ф' => 'f',    'х' => 'h',    'ц' => 'c',    'ч' => 'ch',
-        'ш' => 'sh',   'щ' => 'sch',  'ь' => '',     'ы' => 'y',    'ъ' => '',
-        'э' => 'e',    'ю' => 'yu',   'я' => 'ya', '1' => 'odin',
-        '2' => 'dva',
-        '3' => 'tri',
-        '4' => 'chetire',
-        '5' => 'pyat',
-        '6' => 'shest',
-        '7' => 'sem',
-        '8' => 'vosem',
-        '9' => 'devyat',
-        '10' => 'desyat',
-        '0' => 'nol',
-    );
-
-    $value = mb_strtolower($value);
-    $value = strtr($value, $converter);
-    $value = mb_ereg_replace('[^-0-9a-z]', '-', $value);
-    $value = mb_ereg_replace('[-]+', '-', $value);
-    $value = trim($value, '-');
-
-//    $value = str_replace("-", "-", $value); //Убираем тире, чтобы использовать его для IDшника
-
-
-    return $value;
-}
-
 
 
 function getExtension($filename) {
@@ -328,55 +148,10 @@ function getconversion ($value1, $value2){
 }
 
 
-function getsizetypeimage($w_src, $h_src){
-
-    if ($w_src > $h_src)  return  "horizont";
-  if ($w_src < $h_src)  return "vertikal";
-  if ($w_src == $h_src)  return"kvadrat";
-
-
-
-
-}
-
-
-
-
 function SystemUserId(){
     return  md5(uniqid().$_SERVER['REMOTE_ADDR'].$_SERVER['UNIQUE_ID']);
 }
 
-
-function gaUserIdGA(){
-
-    if (!empty($_COOKIE['_ga']))   return preg_replace("/^.+\.(.+?\..+?)$/", "\\1", $_COOKIE['_ga']);
-
-    return false;
-
-}
-
-
-function gaUserId(){
-
-
-    if (!empty($_COOKIE['dscid'])) return $_COOKIE['dscid'];
-
-
-    return false;
-
-
-
-//    return preg_replace("/^.+\.(.+?\..+?)$/", "\\1", $_COOKIE['_ga']);
-
-
-}
-
-function statuscashback($status){
-
-    if ($status == 1) echo '<span class="badge badge-warning">Ожидание вонаграждения от магазина</span>';
-    if ($status == 2) echo '<span class="badge badge-success">Кешбек зачислен</span>';
-
-}
 
 
 function delDir($dir) {
@@ -387,29 +162,7 @@ function delDir($dir) {
     return rmdir($dir);
 }
 
-function gtmBODY(){
-    ?>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T8RXKZ6"
-                      height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
-    <?php
-}
-
-function gtmHEAD(){
-    ?>
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-        })(window,document,'script','dataLayer','GTM-T8RXKZ6');</script>
-    <!-- End Google Tag Manager -->
-    <?php
-}
-
 function fCURL($url, $PARAMS = [], $headers = []){
-
 
     $ch = curl_init();
 
@@ -480,69 +233,6 @@ function fCURL($url, $PARAMS = [], $headers = []){
 
 
 
-function clearrequis($value){
-
-    $value = trim($value);
-    $value = strip_tags($value);
-    $value = htmlspecialchars($value);
-    $value = str_replace(" ", "", $value);
-
-    return $value;
-}
-
-
-
-function validationpay($type, $value){
-
-    $value = clearrequis($value);
-
-    if ($type == "qiwi"){
-        preg_match('/^\+\d{9,15}$/', $value, $matches);
-        if (!empty($matches)) return true;
-        if (empty($matches)) return false;
-    }
-
-
-    if ($type == "yamoney"){
-        preg_match('/^41001[0-9]{7,11}$/', $value, $matches);
-        if (!empty($matches)) return true;
-        if (empty($matches)) return false;
-    }
-
-    if ($type == "cardvisa"){
-        preg_match('/^([45]{1}[\d]{15}|[6]{1}[\d]{17})$/', $value, $matches);
-        if (!empty($matches)) return true;
-        if (empty($matches)) return false;
-    }
-
-
-    if ($type == "cardmaster"){
-        preg_match('/^([45]{1}[\d]{15}|[6]{1}[\d]{17})$/', $value, $matches);
-        if (!empty($matches)) return true;
-        if (empty($matches)) return false;
-    }
-
-    if ($type == "cardmir"){
-        preg_match('/^([245]{1}[\d]{15}|[6]{1}[\d]{17})$/', $value, $matches);
-        if (!empty($matches)) return true;
-        if (empty($matches)) return false;
-    }
-
-    if ($type == "cardukr"){
-        preg_match('/^([45]{1}[\d]{15}|[6]{1}[\d]{17})$/', $value, $matches);
-        if (!empty($matches)) return true;
-        if (empty($matches)) return false;
-    }
-
-
-
-
-
-
-    return true;
-}
-
-
 
 // Форматирование цен.
 function format_price($value)
@@ -550,45 +240,6 @@ function format_price($value)
     return number_format($value, 2, ',', ' ');
 }
 
-// Сумма прописью.
-function num2str($num) {
-    $nul='ноль';
-    $ten=array(
-        array('','один','два','три','четыре','пять','шесть','семь', 'восемь','девять'),
-        array('','одна','две','три','четыре','пять','шесть','семь', 'восемь','девять'),
-    );
-    $a20=array('десять','одиннадцать','двенадцать','тринадцать','четырнадцать' ,'пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать');
-    $tens=array(2=>'двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят' ,'восемьдесят','девяносто');
-    $hundred=array('','сто','двести','триста','четыреста','пятьсот','шестьсот', 'семьсот','восемьсот','девятьсот');
-    $unit=array( // Units
-        array('копейка' ,'копейки' ,'копеек',	 1),
-        array('рубль'   ,'рубля'   ,'рублей'    ,0),
-        array('тысяча'  ,'тысячи'  ,'тысяч'     ,1),
-        array('миллион' ,'миллиона','миллионов' ,0),
-        array('миллиард','милиарда','миллиардов',0),
-    );
-    //
-    list($rub,$kop) = explode('.',sprintf("%015.2f", floatval($num)));
-    $out = array();
-    if (intval($rub)>0) {
-        foreach(str_split($rub,3) as $uk=>$v) { // by 3 symbols
-            if (!intval($v)) continue;
-            $uk = sizeof($unit)-$uk-1; // unit key
-            $gender = $unit[$uk][3];
-            list($i1,$i2,$i3) = array_map('intval',str_split($v,1));
-            // mega-logic
-            $out[] = $hundred[$i1]; # 1xx-9xx
-            if ($i2>1) $out[]= $tens[$i2].' '.$ten[$gender][$i3]; # 20-99
-            else $out[]= $i2>0 ? $a20[$i3] : $ten[$gender][$i3]; # 10-19 | 1-9
-            // units without rub & kop
-            if ($uk>1) $out[]= morph($v,$unit[$uk][0],$unit[$uk][1],$unit[$uk][2]);
-        } //foreach
-    }
-    else $out[] = $nul;
-    $out[] = morph(intval($rub), $unit[1][0],$unit[1][1],$unit[1][2]); // rub
-    $out[] = $kop.' '.morph($kop,$unit[0][0],$unit[0][1],$unit[0][2]); // kop
-    return trim(preg_replace('/ {2,}/', ' ', join(' ',$out)));
-}
 
 /**
  * Склоняем словоформу
