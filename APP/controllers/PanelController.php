@@ -4,7 +4,7 @@ use APP\core\Cache;
 use APP\models\Addp;
 use APP\models\Panel;
 use APP\core\base\Model;
-
+use ccxt\ccxt;
 
 class PanelController extends AppController {
 	public $layaout = 'PANEL';
@@ -35,6 +35,10 @@ class PanelController extends AppController {
         \APP\core\base\View::setMeta($META);
         \APP\core\base\View::setBreadcrumbs($BREADCRUMBS);
 
+
+        var_dump (\ccxt\Exchange::$exchanges); // print a list of all available exchange classes
+
+        echo "zzz";
 
 //        $this->set(compact('companiestoday', 'conversiontodaty'));
 
