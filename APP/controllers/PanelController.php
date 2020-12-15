@@ -38,16 +38,18 @@ class PanelController extends AppController {
 
       //  var_dump (\ccxt\Exchange::$exchanges); // print a list of all available exchange classes
 
-        $binance = new \ccxt\binance ();
-        show($binance->load_markets ());
 
+            $TickerBinance = $Panel->GetTickerRest("binance");
+
+            show($TickerBinance);
 
 
 //        $this->set(compact('companiestoday', 'conversiontodaty'));
 
-
-
     }
+
+
+
 
 
 

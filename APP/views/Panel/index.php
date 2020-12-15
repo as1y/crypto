@@ -9,7 +9,12 @@
     <div class="card-body">
 
 
-        fdfsfds
+       <?php
+
+       echo "<h1><font color='#006400'>BURAN 2.0 PART 1 (BINANCE->HITBTC->USD) </font></h1>";
+
+       ?>
+
 
     </div>
 

@@ -8,13 +8,26 @@ use RedBeanPHP\R;
 class Panel extends \APP\core\base\Model {
 
 
+    public function GetTickerRest($exchange = "binance"){
+
+        $TICKERS = [];
+
+        if ($exchange == "binance"){
+
+            $binance = new \ccxt\binance ();
+
+            $TICKERS = $binance->fetchTickers();
+
+        }
 
 
-//    public function updatestatus(){
-//
-//     return R::findAll("updatestatus");
-//
-//    }
+
+
+        return $TICKERS;
+
+
+
+    }
 
 
 
