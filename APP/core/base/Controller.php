@@ -27,17 +27,11 @@ abstract class Controller {
 
 
 
-        //Если без сессией зашел в логин или на главную
-        if (empty($_SESSION['ulogin']) && $route['controller'] == "Buyer" ){
-            redir('/user/');
-        }
-        //Если без сессией зашел в логин или на главную
-
 
         //Если без сессией зашел в логин или на главную
-        if (empty($_SESSION['ulogin']) && $route['controller'] == "Panel" ){
-            redir('/user/');
-        }
+//        if (empty($_SESSION['ulogin']) && $route['controller'] == "Panel" ){
+//            redir('/user/');
+//        }
         //Если без сессией зашел в логин или на главную
 
 

@@ -30,6 +30,20 @@ class Panel extends \APP\core\base\Model {
     }
 
 
+    public function GetBalance(){
+
+            $binance = new \ccxt\binance ();
+
+            $balance = $binance->fetchTickers();
+
+
+        return $balance;
+
+
+
+    }
+
+
 
 
 

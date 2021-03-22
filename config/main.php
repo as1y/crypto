@@ -1,17 +1,17 @@
 <?php
 return [
     'LAYOUT' => 'MAIN',
-    'DOMAIN' => 'MONEY',
+    'DOMAIN' => 'BURAN',
     'USERTABLE' => 'users',
     'BASEMAIL' => [
         'name' => 'MONEY',
-        'email' => 'info@dlead.ru'
+        'email' => 'info@buran.team'
     ],
 
     'db' => [
-        'dsn' => 'mysql:host=127.0.0.1;dbname=dbdlead;charset=utf8;port=3306',
-        'user' => 'userdlead',
-        'pass' => '1%z}p%of%p1c1u3',
+        'dsn' => 'mysql:host=127.0.0.1;dbname=dbburan;charset=utf8;port=3306',
+        'user' => 'userburan',
+        'pass' => 'lc(]sk7{ZZphuT?',
     ],
 
 
