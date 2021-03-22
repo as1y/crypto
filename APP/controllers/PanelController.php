@@ -27,7 +27,7 @@ class PanelController extends AppController {
 
 
     private $TypeGird = "long";
-    private $RangeH = 56950;
+    private $RangeH = 57100;
     private $RangeL = 56100;
     private $CountOrders = 20;
 
