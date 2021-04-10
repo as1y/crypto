@@ -15,26 +15,13 @@ class MainController extends AppController {
 
         $Panel = new Panel();
 
-        $allprofit = $this->AllProfit();
-
-        show($allprofit);
+//        $allprofit = $this->AllProfit();
+//
+//        show($allprofit);
 
 	}
 
 
-	public function AllProfit(){
-
-        $TrekHistory = R::findAll("trekhistory");
-
-        $allprofit = 0;
-        foreach ($TrekHistory as $key=>$value){
-            $allprofit = $allprofit + $value['delta'];
-        }
-
-
-        return $allprofit;
-
-    }
 
 
 
