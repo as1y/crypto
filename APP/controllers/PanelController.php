@@ -68,12 +68,9 @@ class PanelController extends AppController {
         ));
 
 
-
-
         $this->FULLBALANCE = $this->GetBal();
 
         $TREKS = $this->GetTreksBD();
-
 
 
         foreach ($TREKS as $TREK) {
@@ -81,8 +78,12 @@ class PanelController extends AppController {
             $this->ORDERBOOK = $this->GetOrderBook($TREK['symbol']);
 
             $POSITION = $this->Looking4Position($TREK['symbol']);
+
+
+            if (empty($POSITION['position'])) continue;
+
             $ARRPOS = $this->GetARRPOS($POSITION, $TREK);
-            show($ARRPOS);
+//           show($ARRPOS);
 
             $timeposition = $this->CalculateHoldMin($TREK['stamp']);
 
@@ -218,17 +219,24 @@ class PanelController extends AppController {
     }
 
     private function GetPosition($symbol){
-        $symbol = $this->EkranSymbol($symbol);
-//        show($symbol);
-//        show($this->FULLBALANCE['info']['positions']);
-        foreach ($this->FULLBALANCE['info']['positions'] as $val){
-            if ($val['symbol'] == $symbol && $val['initialMargin'] != 0){
 
+        $symbol = $this->EkranSymbol($symbol);
+        show($symbol);
+        //show($this->FULLBALANCE['info']['positions']);
+
+        if (empty($this->FULLBALANCE['info']['positions'])) return false;
+
+        foreach ($this->FULLBALANCE['info']['positions'] as $val){
+
+
+            if ($val['symbol'] == $symbol && $val['initialMargin'] != 0){
                 $POSTION = $val;
                 return $POSTION;
 
             }
         }
+
+
 
         return false;
     }

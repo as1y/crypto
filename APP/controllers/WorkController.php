@@ -16,9 +16,8 @@ class WorkController extends AppController {
     public $SecretKey = "FwUD2Ux5sjLo8DyifqYr4cfWgxASblk7CZo7";
 
     // Переменные для стратегии
-    public $summazahoda = 40; // Сумма захода с оригинальным балансом
-    public $leverege = 30;
-    public $Exhcnage1 = "bybit";
+    public $summazahoda = 30; // Сумма захода с оригинальным балансом
+    public $leverege = 50;
     public $symbol = "BTC/USDT";
     public $emailex  = "raskrutkaweb@yandex.ru"; // Сумма захода USD
     public $namebdex = "treks";
@@ -27,8 +26,12 @@ class WorkController extends AppController {
 
 
     private $TypeGird = "long";
-    private $RangeH = 55410;
-    private $RangeL = 54300;
+    // $TypeGird = "2side";
+
+
+    private $RangeH = 55500; // Верхняя граница коридора
+    private $RangeL = 54500; // Нижняя граница коридора
+
     private $CountOrders = 20;
 
 
@@ -87,6 +90,8 @@ class WorkController extends AppController {
         ));
 
         $this->esymbol = $this->EkranSymbol();
+
+
 
         $this->FULLBALANCE = $this->GetBal();
 
@@ -147,19 +152,18 @@ class WorkController extends AppController {
 
         $this->SetLeverage($this->leverege);
 
+        $pricenow = $this->GetPriceSide($this->symbol, "long");
 
-        echo "Проверка на значение цены<br>";
+        echo "Текущая цена".$pricenow."<br>";
 
-        $pricenow = $this->GetPriceSide($this->symbol, $this->TypeGird);
 
-        if ($this->RangeH > $pricenow && $this->TypeGird == "long"){
-            echo "Сетка в лонг. Текущая цена должна быть выше верхней границы сетки<br>";
-            echo "Текущая цена =  ".$pricenow." <br>";
-            echo "Верхняя планка захода = ".$this->RangeH." <br>";
-            return false;
-        }
-        echo "<hr>";
-
+//        if ($this->RangeH > $pricenow && $this->TypeGird == "long"){
+//            echo "Сетка в лонг. Текущая цена должна быть выше верхней границы сетки<br>";
+//            echo "Текущая цена =  ".$pricenow." <br>";
+//            echo "Верхняя планка захода = ".$this->RangeH." <br>";
+//            return false;
+//        }
+//        echo "<hr>";
 
 
         echo "Рассчет ордеров<br>";
@@ -167,35 +171,53 @@ class WorkController extends AppController {
         $delta = ($this->RangeH) - ($this->RangeL);
         $this->step = $delta/$this->CountOrders;
 
-        // РАСЧЕТ ШАГОВ
-        $this->MASSORDERS = $this->GenerateStepPrice($delta, $this->step);
-        $this->CalculatePriceOrders();
-
-
-
         if ($this->BALANCE < $this->summazahoda){
             echo "НЕ ХВАТАЕТ БАЛАНСА";
             exit;
         }
 
-        foreach ($this->MASSORDERS as $key=>$val){
-            $quantity = $this->GetQuantityBTC($val['summazahoda'] , $val['price']);
-            $this->MASSORDERS[$key]['quantity'] = $quantity;
-            echo $quantity."<br>";
-        }
+
+
+
+        // РАСЧЕТ ШАГОВ
+        $this->MASSORDERS = $this->GenerateStepPrice($delta, $this->step);
+        $this->CalculatePriceOrders();
+
+
+        // Дополняем массив ордеров детальными значениями
         foreach ($this->MASSORDERS as $key=>$val){
 
+            $quantity = $this->GetQuantityBTC($val['summazahoda'] , $val['price']);
+            $side = $this->GetFirstSide($key);
+
+            $this->MASSORDERS[$key]['side'] = $side;
+            $this->MASSORDERS[$key]['quantity'] = $quantity;
+        }
+
+
+
+        // Выставляем ордера физически
+        foreach ($this->MASSORDERS as $key=>$val){
             $params = [
                 'time_in_force' => "PostOnly",
 //                'reduce_only' => true
             ];
 
-            $order = $this->EXCHANGECCXT->create_order($this->symbol,"limit","Buy", $val['quantity'], $val['price'], $params);
+
+            // Проверка цены выставляемого ордера и текущей цены
+            // Если цена не попадает, то удаляем ордер из массива и делаем continue
+            $ResultCheck = $this->CheckValidateOrderFirst($val['side'], $pricenow, $val['price']);
+
+            if ($ResultCheck === FALSE){
+                unset($this->MASSORDERS[$key]);
+                continue;
+            }
+
+            $sideorder = $this->GetTextSide($val['side']);
+            $order = $this->EXCHANGECCXT->create_order($this->symbol,"limit",$sideorder, $val['quantity'], $val['price'], $params);
             $this->MASSORDERS[$key]['order'] = $order;
             echo "ОРДЕР ВЫСТАВЛЕН<br>";
-
         }
- 
 
         // Добавление ТРЕКА в БД
         $avg = ($this->RangeL + $this->RangeH)/2;
@@ -203,7 +225,6 @@ class WorkController extends AppController {
 
         $ARR['emailex'] = $this->emailex;
         $ARR['status'] = 1;
-        $ARR['side'] = $this->TypeGird;
         $ARR['symbol'] = $this->symbol;
         $ARR['lever'] = $this->leverege;
         $ARR['count'] = $this->CountOrders;
@@ -222,7 +243,6 @@ class WorkController extends AppController {
         // Добавление ордеров в БД
         foreach ($this->MASSORDERS as $key=>$val){
 
-            if ($this->TypeGird  == "long") $nextstep = $val['order']['price'] + $this->step;
 
             $ARR = [];
             $ARR['idtrek'] = $idtrek;
@@ -230,11 +250,9 @@ class WorkController extends AppController {
             $ARR['orderid'] = $val['order']['id'];
             $ARR['status'] = $val['order']['status'];
             $ARR['type'] = $val['order']['type'];
-            $ARR['side'] = $val['order']['side'];
+            $ARR['side'] = $val['side'];
             $ARR['amount'] = $val['order']['amount'];
             $ARR['price'] = $val['order']['price'];
-            $ARR['nextstep'] = $nextstep;
-
 
             $this->AddARRinBD($ARR, "orders");
 
@@ -246,43 +264,6 @@ class WorkController extends AppController {
     }
 
 
-    private function LogZapuskov($TREK){
-
-        foreach ($TREK as $key=>$val){
-            $tbl = R::findOne("treks", "WHERE id =?", [$val['id']]);
-            $tbl->lastrun = date("H:i:s");
-            R::store($tbl);
-        }
-
-        return true;
-    }
-
-
-    private function StartTrek($TREK){
-
-        $tbl = R::findOne("treks", "WHERE id =?", [$TREK['id']]);
-        $tbl->work = 1;
-        R::store($tbl);
-
-
-        return true;
-    }
-
-
-
-    private function StopTrek($TREK){
-        foreach ($TREK as $key=>$val){
-            $tbl = R::findOne("treks", "WHERE id =?", [$val['id']]);
-            $tbl->work = 0;
-            R::store($tbl);
-        }
-        return true;
-    }
-
-
-
-
-
     private function WorkStatus1($TREK)
     {
 
@@ -291,8 +272,9 @@ class WorkController extends AppController {
 
 
         $OrdersBD = $this->GetOrdersBD($TREK);
-//        show($ORDERS);
+//        show($OrdersBD);
 
+        exit();
 
 
 
@@ -406,6 +388,43 @@ class WorkController extends AppController {
 
     }
 
+
+    // РАБОЧИЕ ФУНКЦИИ
+
+
+    public function CheckValidateOrderFirst($sideorder, $pricenow, $priceorder){
+
+        echo "Сторона выставления ордера ".$sideorder."<br>";
+
+        echo "Текущая цена ".$pricenow."<br>";
+
+        echo "Цена выставления ордера ".$priceorder."<br>";
+
+        $result = true;
+        if ($sideorder == "long" && $priceorder > $pricenow ) $result = false;
+        if ($sideorder == "short" && $priceorder < $pricenow ) $result = false;
+
+        echo "Валидация на выставление <br>".$result."";
+        echo "<hr>";
+
+        return $result;
+
+
+    }
+
+    public function GetTextSide($textside){
+        if ($textside == "long") $sideorder = "Buy";
+        if ($textside == "short") $sideorder = "sell";
+        return $sideorder;
+    }
+
+    public function GetFirstSide($key){
+        $side = "short";
+        if ( $key+1 <= $this->CountOrders/2 ) $side = "long";
+
+
+        return $side;
+    }
 
     public function CreateReversOrder($TREK, $ORD){
 
@@ -534,8 +553,6 @@ class WorkController extends AppController {
         return true;
     }
 
-
-
     public function GetBal(){
         $balance = $this->EXCHANGECCXT->fetch_balance();
         return $balance;
@@ -595,31 +612,6 @@ class WorkController extends AppController {
         return $id;
 
 
-    }
-
-    private function GetOrdersREST()
-    {
-
-
-        $orders = $this->EXCHANGECCXT->fetch_orders($this->symbol);
-
-//        try
-//        {
-//            $orders = $this->EXCHANGECCXT->fetch_orders($this->symbol);
-//        }
-//        catch (Exception $e)
-//        {
-//            show($e);
-//        }
-
-        $MASS = [];
-        foreach ($orders as $key=>$val){
-            $MASS[$val['id']] = $val;
-        }
-
-      //  show($MASS);
-
-        return $MASS;
     }
 
 
@@ -685,6 +677,35 @@ class WorkController extends AppController {
 
     }
 
+    private function LogZapuskov($TREK){
+
+        foreach ($TREK as $key=>$val){
+            $tbl = R::findOne("treks", "WHERE id =?", [$val['id']]);
+            $tbl->lastrun = date("H:i:s");
+            R::store($tbl);
+        }
+
+        return true;
+    }
+
+    private function StartTrek($TREK){
+
+        $tbl = R::findOne("treks", "WHERE id =?", [$TREK['id']]);
+        $tbl->work = 1;
+        R::store($tbl);
+
+
+        return true;
+    }
+
+    private function StopTrek($TREK){
+        foreach ($TREK as $key=>$val){
+            $tbl = R::findOne("treks", "WHERE id =?", [$val['id']]);
+            $tbl->work = 0;
+            R::store($tbl);
+        }
+        return true;
+    }
 
 
 }
