@@ -119,7 +119,17 @@ class WorkController extends AppController {
         $TREK = $this->GetTreksBD();
 
 
+        $pricenow = $this->GetPriceSide($this->symbol, "long");
+        $GB = $this->GlobalPosition($pricenow);
 
+
+        echo "<b>Верхняя граница коридора:</b>".$this->RangeH."<br>";
+        echo "<b>Нижняя граница коридора:</b>".$this->RangeL."<br>";
+        echo "<b>Текущая цена:</b>".$pricenow."<br>";
+
+        show($GB);
+
+        exit('gfd');
 
 
         foreach ($TREK as $key => $row) {
@@ -460,6 +470,7 @@ class WorkController extends AppController {
             }
 
 
+            // Если откупились на первый первый статус (откупился первый раз после выставления)
 
 
         }
@@ -522,10 +533,12 @@ class WorkController extends AppController {
 
     }
 
-    private function GlobalPosition(){
-        $pricenow = $this->GetPriceSide($this->symbol, "long");
+    private function GlobalPosition($pricenow){
+
+        echo "Верхняя позиция +";
+
         if ($pricenow > $this->RangeH) return "HIGH";
-        if ($pricenow < $this->RangeH) return "LOW";
+        if ($pricenow < $this->RangeL) return "LOW";
         return "NORMAL";
 
 
