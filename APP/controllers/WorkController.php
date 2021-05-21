@@ -26,7 +26,7 @@ class WorkController extends AppController {
 
 
     private $RangeH = 38000; // Верхняя граница коридора
-    private $RangeL = 35500; // Нижняя граница коридора
+    private $RangeL = 36000; // Нижняя граница коридора
 
     private $CountOrders = 20;
 
@@ -97,10 +97,8 @@ class WorkController extends AppController {
         // Наличие открытых позиций.
         $this->POSITIONBOOL = $this->GetPosition();
 
-        echo "<b>Наличие позиции</b><br>";
+        echo "<b>Наличие позиции (BOOL)</b><br>";
         var_dump($this->POSITIONBOOL);
-
-        // Контроль повторного запуска
 
 
         // РАСЧЕТ ОРДЕРОВ
@@ -117,19 +115,6 @@ class WorkController extends AppController {
         $Panel = new Panel();
 
         $TREK = $this->GetTreksBD();
-
-
-        $pricenow = $this->GetPriceSide($this->symbol, "long");
-        $GB = $this->GlobalPosition($pricenow);
-
-
-        echo "<b>Верхняя граница коридора:</b>".$this->RangeH."<br>";
-        echo "<b>Нижняя граница коридора:</b>".$this->RangeL."<br>";
-        echo "<b>Текущая цена:</b>".$pricenow."<br>";
-
-        show($GB);
-
-        exit('gfd');
 
 
         foreach ($TREK as $key => $row) {
@@ -244,6 +229,9 @@ class WorkController extends AppController {
         $ARR['rangel'] = $this->RangeL;
         $ARR['step'] = $this->step;
         $ARR['avg'] = $avg;
+        $ARR['hpos'] = 0; // Статус хэдж позиции
+        $ARR['horder'] = NULL; // Поле ID ордера для создания хэдж позиции
+        $ARR['action'] = NULL; // Статус Экшена
         $ARR['date'] = date("Y:m:d");
         $ARR['stamp'] = time();
 
@@ -279,18 +267,31 @@ class WorkController extends AppController {
 
     }
 
+    // Статус 1 - когда находимся в КОРИДОРЕ
     private function WorkStatus1($TREK)
     {
 
+
+        // Проверяем в коридоре мы или нет.
+        $pricenow = $this->GetPriceSide($this->symbol, "long");
+        $GB = $this->GlobalPosition($pricenow);
+        echo "<b>Верхняя граница коридора:</b>".$this->RangeH."<br><br>";
+        echo "<b>Нижняя граница коридора:</b>".$this->RangeL."<br>";
+        echo "<b>Текущая цена:</b>".$pricenow."<br>";
+
+        if ($GB == "HIGH" || $GB == "LOW"){
+            $ARR['status'] = 2;
+            $this->ChangeARRinBD($ARR, $TREK['id']);
+        }
+
+
+
+        // Если не в коридоре, то меняем СТАТУС трека и завершаем ЦИКЛ
+
+
+
         $OrdersBD = $this->GetOrdersBD($TREK);
 
-
-        // Определение в каком диапозоне неходиться цена
-            // Определяем в каком диапозоне цена.
-            // Определяем есть ли ордер выставленный ордер
-            // Если ордер не выставлен, то выставляем
-
-        //
 
 
         //show($OrdersBD);
@@ -403,8 +404,6 @@ class WorkController extends AppController {
 
             }
 
-
-
             if ($OrderBD['side'] == "short"){
 
                 //  Валидация выставления ордера
@@ -481,6 +480,168 @@ class WorkController extends AppController {
 
     }
 
+
+    // Статус 2 - Вышли из коридора
+    private function WorkStatus2($TREK){
+
+        echo "<h1><font color='#8b0000'>ВНЕ КОРИДОРА</font></h1>";
+
+        // Проверка наличия хеджевой позиции.
+        if ($TREK['hpos'] == 0){
+
+            echo "Нет хеджевой позиции. Приступаем к ее созданию<br>";
+
+            if ($TREK['action'] == NULL){
+                $this->SetAction($TREK, "CreatePosition");
+                return true;
+            }
+
+            if ($TREK['action'] == "CreatePosition") $this->ActionCreatePosition($TREK);
+
+            return true;
+
+        }
+
+
+        if ($TREK['hpos'] == 1){
+
+            echo "<b>Контролируем ход ХЕДЖОВОЙ позиции</b>";
+
+        }
+
+
+        
+        // Определение убыточной позиции (ее размера и направления)
+        // Создание хеджевой позиции
+        // Контроль хеджевой позиции
+        // Если позиция в минусе, то фиксируем ее
+        // Если позиция закрыта, то отрубаем скрипт и выключаем все ордера. Фиксируем прибыль
+
+
+    }
+
+
+    private function ActionCreatePosition($TREK){
+
+        echo  "Запускаем Action CreatePosition. Создаем контр ХЕДЖ позицию <br>";
+
+        exit("fififi");
+
+        // Проверка на наличие ордера. Если ордера нет, то создаем
+        if($TREK['horder'] == NULL){
+            // Определяем минусовую позицию
+
+            $POSITIONS =  $this->LookHPosition();
+            show($POSITIONS['minuspos']);
+
+            // Создаем ордер для увеличения контр позиции
+            $order = $this->CreateContrPositionOrder($TREK, $POSITIONS);
+            show($order);
+
+            $ARR['horder'] = $order['id'];
+            $this->ChangeARRinBD($ARR, $TREK['id']);
+
+            // echo "Создаем ордер";
+            return true;
+        }
+
+
+        if ($TREK['horder'] != NULL){
+
+
+            echo "<b> Проверяем откупился ордер на контр позицию или нет или нет </b>";
+            $OrderREST = $this->GetOneOrderREST($TREK['horder']);
+            show($OrderREST);
+            if ($this->OrderControl($OrderREST) === FALSE){
+                echo "ОРДЕР не откупился <br>";
+                //    continue;
+            }
+
+
+        }
+
+
+
+
+        return true;
+
+
+
+    }
+
+    private function CreateContrPositionOrder($TREK, $POSITIONS){
+
+        // Определение параметров для выставления ордера увеличения позиции
+        $PARAMS = $this->GetParamCreateHPosition($POSITIONS['minuspos']);
+
+        // Выставления ордера
+
+        show($PARAMS);
+
+        $par = [
+            'time_in_force' => "PostOnly",
+            'reduce_only' => false,
+        ];
+
+        $order = $this->EXCHANGECCXT->create_order($this->symbol,"limit",$PARAMS['side'], $PARAMS['amount'] , $PARAMS['price'], $par);
+
+        echo "<font color='#8b0000'>Создали ордер для увеличения позиции </font><br>";
+
+        return $order;
+    }
+
+
+    private function GetParamCreateHPosition($POSITIONS){
+
+        $PARAMS = [];
+
+        // Цена
+        $PARAMS['price'] = $this->GetPriceSide($this->symbol, $POSITIONS['minuspos']['sidecode']);
+        $PARAMS['amount'] = ['minuspos']['size']*2;
+        $PARAMS['side'] = ['minuspos']['side'];
+
+        return $PARAMS;
+
+    }
+
+    public function SetAction($TREK, $action){
+
+        $SetAction = R::load($this->namebdex, $TREK['id']);
+        $SetAction->action = $action;
+        R::load($SetAction);
+        echo "Action изменен<br>";
+        return true;
+
+
+    }
+
+
+
+    public function LookHPosition(){
+
+        $POSITIONS = $this->EXCHANGECCXT->fetch_positions([$this->symbol]);
+
+        $POSITIONS[0]['sidecode'] = "long";
+        $POSITIONS[1]['sidecode'] = "short";
+
+        // 0 - Позиция в BUY
+        // 1 - Позиция в SELL
+        if ($POSITIONS[0]['unrealised_pnl'] < $POSITIONS[1]['unrealised_pnl']){
+            $POS['minuspos'] = $POSITIONS[0];
+            $POS['pluspos'] = $POSITIONS[1];
+        }
+
+        if ($POSITIONS[1]['unrealised_pnl'] < $POSITIONS[0]['unrealised_pnl']){
+            $POS['minuspos'] = $POSITIONS[1];
+            $POS['pluspos'] = $POSITIONS[0];
+        }
+
+
+        return $POS;
+
+    }
+
+
     // РАБОЧИЕ ФУНКЦИИ
     public function CheckValidateOrderFirst($sideorder, $pricenow, $priceorder){
         echo "Сторона выставления ордера ".$sideorder."<br>";
@@ -535,7 +696,13 @@ class WorkController extends AppController {
 
     private function GlobalPosition($pricenow){
 
-        echo "Верхняя позиция +";
+//        $LUFTH = plusperc($this->RangeH, 2, 0.1);
+//        $LUFTL = minusperc ($this->RangeL, 2, 0.1);
+//
+//
+//        echo "Верхняя позиция + ".$LUFTH."<br>";
+//        echo "Верхняя позиция + ".$LUFTL."<br>";
+
 
         if ($pricenow > $this->RangeH) return "HIGH";
         if ($pricenow < $this->RangeL) return "LOW";
@@ -792,9 +959,34 @@ class WorkController extends AppController {
         $tbl->work = 1;
         R::store($tbl);
 
-
         return true;
     }
+
+    private function ChangeARRinBD($ARR, $id, $BD = false)
+    {
+
+        if ($BD == false) $BD = $this->namebdex;
+
+        echo('-----------------');
+        echo('-----------------');
+        echo('-----------------');
+        show($ARR);
+        echo('-----------------');
+        echo('-----------------');
+        echo('-----------------');
+
+        $tbl = R::load($BD, $id);
+        foreach ($ARR as $name => $value) {
+            $tbl->$name = $value;
+        }
+        R::store($tbl);
+
+        return true;
+
+
+    }
+
+
 
     private function StopTrek($TREK){
         foreach ($TREK as $key=>$val){

@@ -38,7 +38,19 @@ function plusperc($PRICE, $tochkabid, $count)
     return number_format($PRICE, $tochkabid, '.', '');
 }
 
+function minusperc($PRICE, $tochkabid, $count)
+{
+    //СКОЛЬКО ТОЧЕК ПОСЛЕ ЗАПЯТОЙ У БИДА
+    $sat = "1";
+    for ($x = 0; $x < $tochkabid; $x++) $sat .= "0";
+    //СКОЛЬКО ТОЧЕК ПОСЛЕ ЗАПЯТОЙ У БИДА
+    $PRICE = $PRICE * $sat;
 
+    $add = ($PRICE / 100) * $count;
+    $PRICE = $PRICE - ceil($add);
+    $PRICE = $PRICE / $sat;
+    return number_format($PRICE, $tochkabid, '.', '');
+}
 
 
 
