@@ -16,7 +16,7 @@ class WorkController extends AppController {
     public $SecretKey = "FwUD2Ux5sjLo8DyifqYr4cfWgxASblk7CZo7";
 
     // Переменные для стратегии
-    public $summazahoda = 18; // Сумма захода с оригинальным балансом
+    public $summazahoda = 10; // Сумма захода с оригинальным балансом
     public $leverege = 90;
     public $symbol = "BTC/USDT";
     public $emailex  = "raskrutkaweb@yandex.ru"; // Сумма захода USD
@@ -24,8 +24,8 @@ class WorkController extends AppController {
 
     public $limTrek = 1;
 
-    private $RangeH = 38000; // Верхняя граница коридора
-    private $RangeL = 37000; // Нижняя граница коридора
+    private $RangeH = 39400; // Верхняя граница коридора
+    private $RangeL = 38400; // Нижняя граница коридора
 
     private $CountOrders = 20;
 
@@ -689,7 +689,14 @@ class WorkController extends AppController {
 
 
         // Фактическая прибыль из-за разницы в размерах позиции
-        $raznica = $BASEINFO['raketa']['unrealised_pnl'] - $BASEINFO['koridor']['unrealised_pnl'];
+        $raznica = $BASEINFO['raketa']['unrealised_pnl'] + $BASEINFO['koridor']['unrealised_pnl'];
+
+        echo "<hr>";
+        echo  "<b>Разница позиции: </b> ".$raznica."<br>";
+//        show($raznica);
+////        exit("gigi");
+
+
         // Если прибыль достаточна, то уходим на финальный экшен
         if ($raznica > round($this->summazahoda/6) ){
             echo "Ракета опередила минусовую позицию! Надо все закрывать";
@@ -752,7 +759,9 @@ class WorkController extends AppController {
 
         // Цена
         $PARAMS['price'] = $this->GetPriceSide($this->symbol, $POSITIONS['pluspos']['sidecode']);
-        $PARAMS['amount'] = $POSITIONS['minuspos']['size']*2;
+
+        $PARAMS['amount'] = $POSITIONS['minuspos']['size'] - $POSITIONS['pluspos']['size'];
+
         $PARAMS['side'] = $POSITIONS['pluspos']['side'];
 
         return $PARAMS;
