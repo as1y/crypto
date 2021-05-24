@@ -662,7 +662,16 @@ class WorkController extends AppController {
             show($order);
             $ARRTREK['status'] = 1;
             $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+
+            $ARRLOG['price'] = $CONTRPOSTION['price'];
+            $this->AddARRinBD($ARRLOG, "logivihoda");
+
+
             R::trash($CONTRPOSTION);
+
+
+
+
             return true;
 
 
@@ -701,6 +710,7 @@ class WorkController extends AppController {
 
         echo "<b>Работает ActionFinish</b>";
 
+        echo "Закрываем позиции в ручную!";
         // Выставляем ордер на закрытие лимитником позицию1
         // Выставляем ордер на закрытие лимитником позицию2
 
@@ -728,7 +738,7 @@ class WorkController extends AppController {
             'time_in_force' => "PostOnly",
             'reduce_only' => false,
         ];
- 
+
         $order = $this->EXCHANGECCXT->create_order($this->symbol,"limit",$PARAMS['side'], $PARAMS['amount'] , $PARAMS['price'], $par);
 
         echo "<font color='#8b0000'>Создали ордер под контр-позицию</font><br>";
