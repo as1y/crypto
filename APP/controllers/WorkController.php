@@ -16,7 +16,7 @@ class WorkController extends AppController {
     public $SecretKey = "FwUD2Ux5sjLo8DyifqYr4cfWgxASblk7CZo7";
 
     // Переменные для стратегии
-    public $summazahoda = 10; // Сумма захода с оригинальным балансом
+    public $summazahoda = 15; // Сумма захода с оригинальным балансом
     public $leverege = 90;
     public $symbol = "BTC/USDT";
     public $emailex  = "raskrutkaweb@yandex.ru"; // Сумма захода USD
@@ -549,7 +549,7 @@ class WorkController extends AppController {
 
 
             $ARR['horder'] = $order['id'];
-            $ARR['size'] = $order['amount'];
+            $ARR['size'] = $POSITIONS['minuspos']['size'];
             $ARR['price'] = $order['price'];
             $ARR['side'] = $POSITIONS['pluspos']['sidecode']; // Сторона позиции, которую наращиваем
             $ARR['contrside'] = $POSITIONS['minuspos']['sidecode']; // Сторона позиции, которую наращиваем
@@ -741,6 +741,7 @@ class WorkController extends AppController {
         // Выставления ордера
         show($PARAMS);
 
+
         $par = [
             'time_in_force' => "PostOnly",
             'reduce_only' => false,
@@ -754,6 +755,7 @@ class WorkController extends AppController {
     }
 
     private function GetParamCreateHPosition($POSITIONS){
+
 
         $PARAMS = [];
 
@@ -885,6 +887,10 @@ class WorkController extends AppController {
 
         if ($pricenow > $this->RangeH + $TREK['step']) return "HIGH";
         if ($pricenow < $this->RangeL - $TREK['step']) return "LOW";
+
+//        if ($pricenow > $this->RangeH) return "HIGH";
+  //      if ($pricenow < $this->RangeL) return "LOW";
+
         return "NORMAL";
 
 
