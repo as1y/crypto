@@ -24,8 +24,8 @@ class WorkController extends AppController {
 
     public $limTrek = 1;
 
-    private $RangeH = 2800; // Верхняя граница коридора
-    private $RangeL = 2700; // Нижняя граница коридора
+    private $RangeH = 2790; // Верхняя граница коридора
+    private $RangeL = 2650; // Нижняя граница коридора
 
     private $CountOrders = 20;
 
@@ -129,7 +129,10 @@ class WorkController extends AppController {
 
             echo "<h2>СИМВОЛ: " . $row['symbol'] . " - STATUS - " . $row['status'] . " | " . $row['side'] . " | " . $row['id'] . "   </h2>";
             $timework = time() - $row['stamp'];
-            echo "Время работы скрипта";
+
+            $minute = $timework/60;
+
+            echo "Время работы скрипта в минутах ".$minute."<br>";
 
             $f = 'WorkStatus' . $row['status'];
             $this->$f($row);
@@ -585,8 +588,8 @@ class WorkController extends AppController {
 
             show($OrderREST);
 
-                  if ($CONTRPOSTION['side'] == "short") $stopl = $TREK['rangel'];
-                  if ($CONTRPOSTION['side'] == "long") $stopl = $TREK['rangeh'];
+                  if ($CONTRPOSTION['side'] == "short") $stopl = $TREK['rangel'] + $TREK['step']*2;
+                  if ($CONTRPOSTION['side'] == "long") $stopl = $TREK['rangeh'] - $TREK['step']*2;
 
 
             $ARR['horder'] = NULL;
