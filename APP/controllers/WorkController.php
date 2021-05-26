@@ -18,14 +18,14 @@ class WorkController extends AppController {
     // Переменные для стратегии
     public $summazahoda = 15; // Сумма захода с оригинальным балансом
     public $leverege = 90;
-    public $symbol = "BTC/USDT";
+    public $symbol = "ETH/USDT";
     public $emailex  = "raskrutkaweb@yandex.ru"; // Сумма захода USD
     public $namebdex = "treks";
 
     public $limTrek = 1;
 
-    private $RangeH = 39400; // Верхняя граница коридора
-    private $RangeL = 38400; // Нижняя граница коридора
+    private $RangeH = 2800; // Верхняя граница коридора
+    private $RangeL = 2700; // Нижняя граница коридора
 
     private $CountOrders = 20;
 
@@ -128,6 +128,9 @@ class WorkController extends AppController {
             $this->WORKTREKS[] = $row['symbol'];
 
             echo "<h2>СИМВОЛ: " . $row['symbol'] . " - STATUS - " . $row['status'] . " | " . $row['side'] . " | " . $row['id'] . "   </h2>";
+            $timework = time() - $row['stamp'];
+            echo "Время работы скрипта";
+
             $f = 'WorkStatus' . $row['status'];
             $this->$f($row);
         }
