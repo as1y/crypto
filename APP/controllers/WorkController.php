@@ -24,8 +24,8 @@ class WorkController extends AppController {
 
     public $limTrek = 1;
 
-    private $RangeH = 2790; // Верхняя граница коридора
-    private $RangeL = 2650; // Нижняя граница коридора
+    private $RangeH = 2890; // Верхняя граница коридора
+    private $RangeL = 2690; // Нижняя граница коридора
 
     private $CountOrders = 20;
 
@@ -234,7 +234,7 @@ class WorkController extends AppController {
         $ARR['rangel'] = $this->RangeL;
         $ARR['step'] = $this->step;
         $ARR['avg'] = $avg;
-        $ARR['date'] = date("Y:m:d");
+        $ARR['date'] = date("h:i:s");
         $ARR['stamp'] = time();
 
         $idtrek = $this->AddARRinBD($ARR);
