@@ -16,7 +16,7 @@ class WorkController extends AppController {
     public $SecretKey = "FwUD2Ux5sjLo8DyifqYr4cfWgxASblk7CZo7";
 
     // Переменные для стратегии
-    public $summazahoda = 15; // Сумма захода с оригинальным балансом
+    public $summazahoda = 30; // Сумма захода с оригинальным балансом
     public $leverege = 90;
     public $symbol = "BTC/USDT";
     public $emailex  = "raskrutkaweb@yandex.ru"; // Сумма захода USD
@@ -159,12 +159,8 @@ class WorkController extends AppController {
 
         $pricenow = $this->GetPriceSide($this->symbol, "long");
 
-        //$startprice = round($pricenow);
+        echo "Текущая цена".$pricenow."<br>";
 
-
-       // echo "Стартовая цена трека ".$startprice."<br>";
-
-        echo "Текущая цена";
 
 //        if ($this->RangeH > $pricenow && $this->TypeGird == "long"){
 //            echo "Сетка в лонг. Текущая цена должна быть выше верхней границы сетки<br>";
@@ -174,8 +170,6 @@ class WorkController extends AppController {
 //        }
 //        echo "<hr>";
 
-        exit();
-
 
         echo "Рассчет ордеров<br>";
 
@@ -184,8 +178,8 @@ class WorkController extends AppController {
             exit();
         }
 
-     //   $delta = ($this->RangeH) - ($this->RangeL);
-     //   $this->step = $delta/$this->CountOrders;
+        $delta = ($this->RangeH) - ($this->RangeL);
+        $this->step = $delta/$this->CountOrders;
 
         if ($this->BALANCE < $this->summazahoda){
             echo "НЕ ХВАТАЕТ БАЛАНСА";
@@ -913,7 +907,7 @@ class WorkController extends AppController {
             if ($val['position_margin'] != 0) return true;
         }
         return false;
-
+  
 
 
     }
