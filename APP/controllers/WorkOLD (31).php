@@ -361,7 +361,6 @@ class WorkController extends AppController {
 
             echo "Информация об ордере из REST<br>";
 
-
             if ($this->OrderControl($OrderREST) === FALSE){
                 echo "ОРДЕР не откупился <br>";
                 continue;
