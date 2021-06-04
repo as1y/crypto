@@ -24,8 +24,8 @@ class WorkController extends AppController {
 
     public $limTrek = 1;
 
-    private $RangeH = 38400; // Верхняя граница коридора
-    private $RangeL = 37600; // Нижняя граница коридора
+    private $RangeH = 37400; // Верхняя граница коридора
+    private $RangeL = 36600; // Нижняя граница коридора
 
     private $CountOrders = 10; // Кол-во ордеров на одну позицию
 
@@ -286,23 +286,30 @@ class WorkController extends AppController {
 
         echo "<hr>";
 
+
+
         if ($TREK['workside'] != $WorkSide){
             // На случай смены активной стороны
-            $TREK['workside'] = $WorkSide;
 
             echo "<b>Переход из одной позиции в другую</b>";
 
             // Подсчет убыточных ордеров
             $countboost = 0;
-            $countboost = R::count("orders", 'WHERE idtrek =? AND side=? AND stat=?', [$TREK['id'], $TREK['workside'], 2]);
-            $countboost = $TREK['countboost'] + $countboost;
+            if ($TREK['boost'] == 0){
+                $countboost = R::count("orders", 'WHERE idtrek =? AND side=? AND stat=?', [$TREK['id'], $TREK['workside'], 2]);
+            }
+
             // Подсчет убыточных ордеров
-
-
 
             $ARRTREK['countboost'] = $countboost;
             $ARRTREK['workside'] = $WorkSide;
             $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+
+            // Отмена ордеров с другой стороны
+
+
+            $TREK['workside'] = $WorkSide;
+
             // На случай смены активной стороны
         }
 
@@ -371,6 +378,8 @@ class WorkController extends AppController {
 
                         $order = $this->CreateFirstOrder($OrderBD, $resultscoring, $TREK);
                         // Записываем
+                       // show($order);
+
                         $this->ChangeIDOrderBD($order, $OrderBD['id']);
 
                         continue;
@@ -503,7 +512,7 @@ class WorkController extends AppController {
 
     private function ControlContrPosition($TREK){
 
-        $contrside = ($TREK['workside'] == "long") ? "short" : "long";
+        $contrside = ($TREK['workside'] == "LONG") ? "short" : "long";
         echo "Противоположный статус:<br>";
         show($contrside);
 
@@ -522,6 +531,7 @@ class WorkController extends AppController {
             echo "Убыточной позиции не обнаружено";
             return true;
         }
+
 
         echo "Локализацием нижний ордер<br>";
 
@@ -633,11 +643,15 @@ class WorkController extends AppController {
 
             if ($pricenow > $OrderBD['price'] + $STEP) return "LIMIT"; // Выставляем лимитник если цена выше
 
-            // Если цена больше центра и ниже требуемой
-            if ($pricenow > $TREK['avg'] && $pricenow < $OrderBD['price']){ // Приближаемся к зоне выставления
+            // Если цена ниже цены ордера
+            if ($pricenow < $OrderBD['price']){
 
+                // Приближаемся к зоне покупки
+               if ($pricenow > ($OrderBD['price'] - $TREK['step']*3) ){ // Цена за 3 шага до нужной цены
+                   if ($OrderBD['first'] == 1) return "MARKET";
+               }
                 // Проверяем не дошел ли он до цены покупки. А то придется выставлять лимитник
-                if ($OrderBD['first'] == 1) return "MARKET";
+
             }
 
 
@@ -648,9 +662,19 @@ class WorkController extends AppController {
         if ($TREK['workside'] == "SHORT"){
 
             if ($pricenow < $OrderBD['price'] - $STEP) return "LIMIT";
-            // Если цена ниже центра, но выше требуемог ордера
-            if ($pricenow < $TREK['avg'] &&  $pricenow > $OrderBD['price']){
-                if ($OrderBD['first'] == 1) return "MARKET";
+
+            // Если цена выше цены ордера
+            if ($pricenow > $OrderBD['price']){
+
+
+                // Приближаемся к зоне покупки
+                if ($pricenow < ($OrderBD['price'] + $TREK['step']*3) ){ // Цена за 3 шага до нужной цены
+                    if ($OrderBD['first'] == 1) return "MARKET";
+                }
+                // Проверяем не дошел ли он до цены покупки. А то придется выставлять лимитник
+
+
+
             }
 
 
@@ -664,7 +688,7 @@ class WorkController extends AppController {
     private function GetWorkSide($pricenow, $TREK){
 
         echo "Средняя цена коридора:".$TREK['avg']."<br>";
- 
+
         if ($pricenow > ($TREK['rangeh'] + $TREK['step']) ) return "HIEND";
         if ($pricenow < ($TREK['rangel'] - $TREK['step']) ) return "LOWEND";
 
@@ -719,6 +743,7 @@ class WorkController extends AppController {
 
 
     }
+
 
     private function CreateFirstOrder($OrderBD, $type, $TREK){
 
