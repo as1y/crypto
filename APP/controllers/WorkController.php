@@ -589,7 +589,7 @@ class WorkController extends AppController {
         }
         if ($POSITION[1]['size'] > 0){
             echo "Закрытие остатков SHORT позиции<br>";
-            $order = $this->EXCHANGECCXT->create_order($this->symbol,"market","buy", $POSITION[0]['size'], null, $param);
+            $order = $this->EXCHANGECCXT->create_order($this->symbol,"market","buy", $POSITION[1]['size'], null, $param);
             show($order);
         }
 
@@ -664,9 +664,9 @@ class WorkController extends AppController {
     private function GetWorkSide($pricenow, $TREK){
 
         echo "Средняя цена коридора:".$TREK['avg']."<br>";
-
-        if ($pricenow > $TREK['rangeh'] ) return "HIEND";
-        if ($pricenow < $TREK['rangel'] ) return "LOWEND";
+ 
+        if ($pricenow > ($TREK['rangeh'] + $TREK['step']) ) return "HIEND";
+        if ($pricenow < ($TREK['rangel'] - $TREK['step']) ) return "LOWEND";
 
 
         if ($pricenow > $TREK['avg'] ) return "LONG";
@@ -847,10 +847,11 @@ class WorkController extends AppController {
 
     public function OrderControl($order){
 
-        if ($order['status'] == "open") return false;
-
         if ($order['amount'] == $order['filled']) return true;
 
+        if ($order['status'] == "open") return false;
+
+        return false;
 
     }
 
