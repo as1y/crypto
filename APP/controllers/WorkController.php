@@ -24,8 +24,8 @@ class WorkController extends AppController {
 
     public $limTrek = 1;
 
-    private $RangeH = 36750; // Верхняя граница коридора
-    private $RangeL = 36000; // Нижняя граница коридора
+    private $RangeH = 38400; // Верхняя граница коридора
+    private $RangeL = 37600; // Нижняя граница коридора
 
     private $CountOrders = 10; // Кол-во ордеров на одну позицию
 
@@ -89,8 +89,6 @@ class WorkController extends AppController {
         ));
 
         $this->esymbol = $this->EkranSymbol();
-
-
 
         $this->FULLBALANCE = $this->GetBal();
 
@@ -218,6 +216,7 @@ class WorkController extends AppController {
         $ARR['status'] = 1;
         $ARR['action'] = "ControlOrders";
         $ARR['boost'] = 0;
+        $ARR['countboost'] = 0;
         $ARR['symbol'] = $this->symbol;
         $ARR['lever'] = $this->leverege;
         $ARR['count'] = $this->CountOrders;
@@ -270,14 +269,6 @@ class WorkController extends AppController {
         $WorkSide = $this->GetWorkSide($pricenow, $TREK);
         show($WorkSide);
 
-        if ($TREK['workside'] != $WorkSide){
-            // На случай смены активной стороны
-            $TREK['workside'] = $WorkSide;
-
-            $ARRTREK['workside'] = $WorkSide;
-            $this->ChangeARRinBD($ARRTREK, $TREK['id']);
-            // На случай смены активной стороны
-        }
 
         // Вывод рабочей информации
         echo "<h3>Базовые параметры</h3>";
@@ -285,19 +276,37 @@ class WorkController extends AppController {
         echo "<b>Верхняя граница коридора:</b>".$TREK['rangeh']."<br>";
         echo "<b>Нижняя граница коридора:</b>".$TREK['rangel']."<br>";
 
-        echo "<hr>";
 
-
-        if ($WorkSide == "PLATO"){
-            echo "<h2>Цена находиться в плато</h2><br>";
-            echo "Текущая цена: <b>".$pricenow."</b><br>";
+        if ($WorkSide == "HIEND" || $WorkSide == "LOWEND"){
+            echo "<b><font color='#8b0000'>Цена вышла из коридора!!!</font></b>";
+            $this->ControlExit($TREK);
             return true;
         }
-        // Определение в какой зоне работаем
+
+
+        echo "<hr>";
+
+        if ($TREK['workside'] != $WorkSide){
+            // На случай смены активной стороны
+            $TREK['workside'] = $WorkSide;
+
+            echo "<b>Переход из одной позиции в другую</b>";
+
+            // Подсчет убыточных ордеров
+            $countboost = 0;
+            $countboost = R::count("orders", 'WHERE idtrek =? AND side=? AND stat=?', [$TREK['id'], $TREK['workside'], 2]);
+            $countboost = $TREK['countboost'] + $countboost;
+            // Подсчет убыточных ордеров
 
 
 
-        // Определение цены
+            $ARRTREK['countboost'] = $countboost;
+            $ARRTREK['workside'] = $WorkSide;
+            $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+            // На случай смены активной стороны
+        }
+
+
 
 
         // Статус ордера - ОРДЕРА на НАРАЩИВАНИЕ ПОЗИЦИИ
@@ -310,12 +319,18 @@ class WorkController extends AppController {
 
     }
 
+
     // Статус 2 - Вышли из коридора
     private function WorkStatus2($TREK){
 
-        echo "<h1><font color='#8b0000'>СТАТУС 2</font></h1>";
+        echo "<h1><font color='green'>КОРИДОР ЗАВЕРШИЛ РАБОТУ</font></h1>";
+
+
+
 
     }
+
+
 
 
 
@@ -324,6 +339,10 @@ class WorkController extends AppController {
         echo  "<b>Запускаем Action ControlOrders. Контролируем работу ордеров</b> <br>";
         $pricenow = round($pricenow);
         $OrdersBD = $this->GetOrdersBD($TREK);
+
+     //   $this->ControlContrPosition($TREK);
+
+
 
         foreach ($OrdersBD as $key=>$OrderBD) {
 
@@ -340,6 +359,8 @@ class WorkController extends AppController {
 
                         echo "Текущая цена".$pricenow."<br>";
                         echo "Цена для выставления ордера".$OrderBD['price']."<br>";
+
+
 
                         // Скоринг на выставление
                         $resultscoring =  $this->CheckFirstOrder($TREK, $pricenow, $OrderBD);
@@ -427,7 +448,6 @@ class WorkController extends AppController {
 
                     echo "Текущая цена: ".$pricenow."<br>";
                     echo "Мы выставляем ордера по цене: ".$price."<br>";
-                    exit("gfdg");
 
 
                     echo "Перевыставляем ордер на 2-м статусе! Обнуляем ID ордера!  <br>";
@@ -446,7 +466,13 @@ class WorkController extends AppController {
 
                 // ОРДЕР ИСПОЛНЕН
 
+
+                // Сокращение убыточной позиции на единицу. Если такая есть
+                $this->ControlContrPosition($TREK);
+
+
                 $this->AddTrackHistoryBD($TREK, $OrderBD);
+
 
                 $ARRCHANGE = [];
                 $ARRCHANGE['stat'] = 1;
@@ -475,59 +501,189 @@ class WorkController extends AppController {
 
     }
 
+    private function ControlContrPosition($TREK){
+
+        $contrside = ($TREK['workside'] == "long") ? "short" : "long";
+        echo "Противоположный статус:<br>";
+        show($contrside);
+
+        $LastOrder = false;
+
+        if ($contrside == "long"){
+            $LastOrder = R::findOne("orders", 'WHERE idtrek =? AND side=? AND stat=? ORDER by `price` DESC', [$TREK['id'], $contrside, 2]);
+        }
+        // Получение ордеров из CONTR позиции
+        if ($contrside == "short"){
+            $LastOrder = R::findOne("orders", 'WHERE idtrek =? AND side=? AND stat=? ORDER by `price` ASC', [$TREK['id'], $contrside, 2]);
+        }
+
+
+        if ($LastOrder == false){
+            echo "Убыточной позиции не обнаружено";
+            return true;
+        }
+
+        echo "Локализацием нижний ордер<br>";
+
+
+
+
+        // Закрываем позицию убыточную
+        $params = [
+            'reduce_only' => true,
+        ];
+
+        $side = $this->GetTextSide($TREK['workside']);
+
+      //  $side = "buy";
+        $order = $this->EXCHANGECCXT->create_order($this->symbol,"market",$side, $LastOrder['amount'], null, $params);
+        show($order);
+
+        // Обнуляем его положение в БД
+        $changeorder = R::load("orders", $LastOrder['id']);
+        $changeorder->stat = 1;
+        $changeorder->orderid = NULL;
+        R::store($changeorder);
+        // Берем противоположные ордера со статусом два
+
+
+        // Отменяем крайний лимитный ордер
+  //      $cancel = $this->EXCHANGECCXT->cancel_order($LastOrder['orderid'], $this->symbol);
+//        show($cancel);
+
+        echo "<b><font color='#8b0000'>Позиция сокращена на 1 единицу</font></b><br>";
+
+        // Снижем счетчик убыточных ордеров
+        if ($TREK['countboost'] > 0){
+            $countboost = $TREK['countboost'] - 1;
+            $ARRTREK['countboost'] = $countboost;
+            $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+        }
+        // Снижем счетчик убыточных ордеров
+
+        $srez = 1;
+        $this->AddTrackHistoryBD($TREK, $LastOrder, $srez);
+
+
+
+        return true;
+
+
+    }
+
+    private function ControlExit($TREK){
+
+        $POSITION = $this->LookHPosition();
+
+       // show($POSITION);
+
+        $param = [
+            'reduce_only' => true,
+        ];
+
+        // Подсраховка на случай остатков не закрытых позиций при выходе из коридора
+        if ($POSITION[0]['size'] > 0){
+            echo "Закрытие остатков LONG позиции<br>";
+            $order = $this->EXCHANGECCXT->create_order($this->symbol,"market","sell", $POSITION[0]['size'], null, $param);
+            show($order);
+        }
+        if ($POSITION[1]['size'] > 0){
+            echo "Закрытие остатков SHORT позиции<br>";
+            $order = $this->EXCHANGECCXT->create_order($this->symbol,"market","buy", $POSITION[0]['size'], null, $param);
+            show($order);
+        }
+
+
+        // Отмена всех ордеров
+        $cancelall = $this->EXCHANGECCXT->cancel_all_orders($this->symbol);
+        show($cancelall);
+
+
+        // Очистка БД с ордерами
+        R::wipe("orders");
+
+
+
+        // Смена Статуса
+        $ARRTREK['status'] = 2;
+        $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+
+        echo "<h3><font color='green'>ЦИКЛ ЗАВЕРШЕН!!!</font> </h3>";
+
+        return true;
+    }
+
     private function CheckFirstOrder($TREK, $pricenow, $OrderBD){
 
-        // Если цена выше цены выставления +  от шага 10%, то выставляем лимитник
-        // Если цена ниже цены выставления + от шага 10%, то ничего не делаем
-        // Если цена в радиусе цены выставления + 10% от шага, то выставляем берем рынком
+        // LONG
+
+        $STEP = ($TREK['step']/100)*$this->skolz;
+        $STEP = round($STEP);
+
+        echo "Сторона скоринга LONG<br>";
+        echo "ШАГ: ".$STEP."<br>";
 
 
         if ($TREK['workside'] == "LONG"){
-            echo "Сторона скоринга LONG<br>";
-            $PercSTEP = ($TREK['step']/100)*$this->skolz;
-            $PercSTEP = round($PercSTEP);
-            $PercSTEP = $OrderBD['price'] + $PercSTEP;
-            echo "Цена + ШАГ".$PercSTEP."<br>";
 
-            if ($pricenow > $PercSTEP) return "LIMIT";
-            if ($pricenow > $OrderBD['price'] && $pricenow < $PercSTEP && $OrderBD['first'] == 1) return "MARKET";
+            // Если ТЕКУЩЯ цена выше цены выставления + от шага 10%, то выставляем лимитник
+
+            // Если ТЕКУЩАЯ цена выше (цены выставления - от шага 50%), то выставляем conditional (типа заранее)
+            // Также цена должна быть ниже цены выставления Т,К, выставляем заранее
+
+            if ($pricenow > $OrderBD['price'] + $STEP) return "LIMIT"; // Выставляем лимитник если цена выше
+
+            // Если цена больше центра и ниже требуемой
+            if ($pricenow > $TREK['avg'] && $pricenow < $OrderBD['price']){ // Приближаемся к зоне выставления
+
+                // Проверяем не дошел ли он до цены покупки. А то придется выставлять лимитник
+                if ($OrderBD['first'] == 1) return "MARKET";
+            }
+
 
 
         }
 
 
         if ($TREK['workside'] == "SHORT"){
-            echo "Сторона скоринга SHORT<br>";
-            $PercSTEP = ($TREK['step']/100)*$this->skolz;
-            $PercSTEP = round($PercSTEP);
-            $PercSTEP = $OrderBD['price'] - $PercSTEP;
 
-            echo "Цена с ШАГ".$PercSTEP."<br>";
+            if ($pricenow < $OrderBD['price'] - $STEP) return "LIMIT";
+            // Если цена ниже центра, но выше требуемог ордера
+            if ($pricenow < $TREK['avg'] &&  $pricenow > $OrderBD['price']){
+                if ($OrderBD['first'] == 1) return "MARKET";
+            }
 
-            if ($pricenow < $PercSTEP) return "LIMIT";
-            if ($pricenow < $OrderBD['price'] && $pricenow > $PercSTEP && $OrderBD['first'] == 1) return "MARKET";
 
         }
 
-            echo "Цена не корректна для выставления ордеров в данном коридоре";
+            echo "Цена не корректна для выставления ордеров в данном коридоре<br>";
             return false;
 
     }
 
     private function GetWorkSide($pricenow, $TREK){
 
-        $dop = round($TREK['step']/2);
-        echo "Цена выхода в активную сетку LONG:".($TREK['avg'] + $dop)."<br>";
-        echo "Цена выхода в активную сетку SHORT:".($TREK['avg'] - $dop)."<br>";
+        echo "Средняя цена коридора:".$TREK['avg']."<br>";
+
+        if ($pricenow > $TREK['rangeh'] ) return "HIEND";
+        if ($pricenow < $TREK['rangel'] ) return "LOWEND";
 
 
-        if ($pricenow > $TREK['avg'] + $dop ) return "LONG";
+        if ($pricenow > $TREK['avg'] ) return "LONG";
+         if ($pricenow < $TREK['avg'] ) return "SHORT";
 
 
-        if ($pricenow < $TREK['avg'] - $dop) return "SHORT";
+        //       $dop = round($TREK['step']/5);
+        //       echo "Цена выхода в активную сетку LONG:".($TREK['avg'] + $dop)."<br>";
+        //       echo "Цена выхода в активную сетку SHORT:".($TREK['avg'] - $dop)."<br>";
 
 
-        if ( ($pricenow < $TREK['avg'] + $dop) && ($pricenow > $TREK['avg'] - $dop)) return "PLATO";
+        //   if ($pricenow > $TREK['avg'] + $dop ) return "LONG";
+       // if ($pricenow < $TREK['avg'] - $dop) return "SHORT";
+
+
+    //    if ( ($pricenow < $TREK['avg'] + $dop) && ($pricenow > $TREK['avg'] - $dop)) return "PLATO";
+
 
     }
 
@@ -553,6 +709,9 @@ class WorkController extends AppController {
 
 
         $order = $this->EXCHANGECCXT->create_order($this->symbol,"limit",$side, $OrderREST['amount'] , $price, $params);
+
+
+
         echo "<font color='#8b0000'>Создали реверсный ордер </font><br>";
 
 
@@ -577,9 +736,10 @@ class WorkController extends AppController {
 
         if ($type == "LIMIT"){
             $params = [
-                'time_in_force' => "PostOnly",
-                'reduce_only' => false,
-            ];
+                    'time_in_force' => "PostOnly",
+                    'reduce_only' => false,
+                ];
+
             $order = $this->EXCHANGECCXT->create_order($this->symbol,"limit",$sideorder, $OrderBD['amount'], $OrderBD['price'], $params);
             return $order;
 
@@ -587,8 +747,23 @@ class WorkController extends AppController {
 
 
         if ($type == "MARKET"){
-            $order = $this->EXCHANGECCXT->create_order($this->symbol,"market",$sideorder, $OrderBD['amount']);
+
+            if ($OrderBD['side'] == "long") $bp = $TREK['avg'];
+            if ($OrderBD['side'] == "short") $bp = $TREK['avg'];
+
+            $params = [
+                'stop_px' => $OrderBD['price'], // trigger $price, required for conditional orders
+                'base_price' => $bp,
+                 'trigger_by' => 'LastPrice', // IndexPrice, MarkPrice
+                'reduce_only' => false,
+            ];
+
+            $order = $this->EXCHANGECCXT->create_order($this->symbol,"market", $sideorder, $OrderBD['amount'], null, $params);
+
             return $order;
+
+
+
         }
 
 
@@ -610,18 +785,8 @@ class WorkController extends AppController {
         // 1 - Позиция в SELL
 
 
-        if ($POSITIONS[0]['unrealised_pnl'] < $POSITIONS[1]['unrealised_pnl']){
-            $POS['minuspos'] = $POSITIONS[0];
-            $POS['pluspos'] = $POSITIONS[1];
-        }
 
-        if ($POSITIONS[1]['unrealised_pnl'] < $POSITIONS[0]['unrealised_pnl']){
-            $POS['minuspos'] = $POSITIONS[1];
-            $POS['pluspos'] = $POSITIONS[0];
-        }
-
-
-        return $POS;
+        return $POSITIONS;
 
     }
 
@@ -672,8 +837,8 @@ class WorkController extends AppController {
 
 
     public function GetTextSide($textside){
-        if ($textside == "long") $sideorder = "Buy";
-        if ($textside == "short") $sideorder = "sell";
+        if ($textside == "long" || $textside == "LONG") $sideorder = "Buy";
+        if ($textside == "short" || $textside == "SHORT") $sideorder = "sell";
         return $sideorder;
     }
 
@@ -754,14 +919,17 @@ class WorkController extends AppController {
         $MASS = [];
 
 
+        // Сужение коридора на 1 пункт
+        $halfstep = round($this->step/2);
+
         for ($i = 0; $i < $this->CountOrders; $i++) {
-            $MASS['long'][]['price'] = $this->RangeH - $this->step*$i;
+            $MASS['long'][]['price'] = ($this->RangeH - $halfstep) - $this->step*$i;
         }
 
             $MASS['avg']['price'] = $avg;
 
         for ($i = 0; $i < $this->CountOrders; $i++) {
-            $MASS['short'][]['price'] = $this->RangeL + $this->step*$i;
+            $MASS['short'][]['price'] = ($this->RangeL + $halfstep) + $this->step*$i;
         }
 
 
@@ -824,9 +992,16 @@ class WorkController extends AppController {
     private function GetOrdersBD($TREK)
     {
         $MASS = R::findAll("orders", 'WHERE idtrek =? AND side=?', [$TREK['id'], $TREK['workside']]);
-
         return $MASS;
     }
+
+    private function GetAllOrdersBD($id)
+    {
+        $MASS = R::findAll("orders", 'WHERE idtrek =?', [$id]);
+        return $MASS;
+    }
+
+
 
     private function AddARRinBD($ARR, $BD = false)
     {
@@ -859,7 +1034,7 @@ class WorkController extends AppController {
     }
 
 
-    private function AddTrackHistoryBD($TREK, $ORD)
+    private function AddTrackHistoryBD($TREK, $ORD, $srez = 0)
     {
 
         //$QTY = $this->GetEnterExitQTY($TREK, $ORD);
@@ -907,6 +1082,7 @@ class WorkController extends AppController {
             'timeexit' => date("H:i:s"),
             'delta' => $delta,
             'penter' => $ORD['price'],
+            'srez' => $srez,
         ];
         //ДОБАВЛЯЕМ В ТАБЛИЦУ
         $tbl3 = R::dispense("trekhistory");
@@ -920,7 +1096,7 @@ class WorkController extends AppController {
 
         echo "Сохранили запись о сделке в БД <br>";
 
- 
+
         return $dollar;
 
     }
