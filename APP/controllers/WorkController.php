@@ -301,6 +301,10 @@ class WorkController extends AppController {
 
             // Подсчет убыточных ордеров
 
+            // Отмена ордеров
+            $this->CancelStopOrd($TREK);
+
+
             $ARRTREK['countboost'] = $countboost;
             $ARRTREK['workside'] = $WorkSide;
             $this->ChangeARRinBD($ARRTREK, $TREK['id']);
@@ -336,9 +340,6 @@ class WorkController extends AppController {
 
 
     }
-
-
-
 
 
     private function ActionControlOrders($TREK, $pricenow){
@@ -711,7 +712,32 @@ class WorkController extends AppController {
 
     }
 
+    private function CancelStopOrd($TREK){
 
+
+        echo "Отмена стоп ордеров при переходе <br>";
+
+        $OrdersBD = R::findAll("orders", 'WHERE idtrek =? AND side=? AND stat=? AND first=?', [$TREK['id'], "LONG", 1,1]);
+
+        foreach ($OrdersBD as $key=>$ORD){
+
+            if ($ORD['orderid'] == NULL) continue;
+
+            $params = [
+                'stop_order_id' => $ORD['orderid'],
+            ];
+            // Функция отмены стоп ордера
+            $this->EXCHANGECCXT->cancel_order($ORD['orderid'], $this->symbol,$params) ;
+            $ORD->orderid = NULL;
+            R::store($ORD);
+
+
+        }
+
+            return true;
+
+
+    }
 
     private function CreateReverseOrder($pricenow, $price, $OrderREST, $OrderBD){
 
