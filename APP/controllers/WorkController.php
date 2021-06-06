@@ -22,7 +22,7 @@ class WorkController extends AppController {
     public $emailex  = "raskrutkaweb@yandex.ru"; // Сумма захода USD
     public $namebdex = "treks";
 
-    private $CENTER = 35200;
+    private $CENTER = 36000;
 
     private $CountOrders = 10; // Общее кол-во ордеров
 
@@ -40,7 +40,9 @@ class WorkController extends AppController {
 
     // Переменные для стратегии
     private $minst = 0.17; // Коэфицент минимального шага
-    private $skolz = 10;
+    private $skolz = 10; // Процент выше которого выставляется лимитник
+    private $boostsize = 3; // На какое кол-во увеличиваеться ордер, если включен BOOST
+    private $compensator = 3; // Количество плюсовых сделок. После которого закрывается часть противоположной позиции
 
     // ТЕХНИЧЕСКИЕ ПЕРЕМЕННЫЕ
     public function indexAction()
@@ -180,6 +182,7 @@ class WorkController extends AppController {
         $ARR['action'] = "ControlOrders";
         $ARR['boost'] = 0;
         $ARR['countboost'] = 0;
+        $ARR['countplus'] = 0;
         $ARR['symbol'] = $this->symbol;
         $ARR['lever'] = $this->leverege;
         $ARR['count'] = $this->CountOrders;
@@ -242,7 +245,8 @@ class WorkController extends AppController {
         // Выключаем BOOST если он отработан
         if ($TREK['boost'] == 1 && $TREK['countboost'] < 1){
             $ARRTREK['boost'] = 0;
-            $ARRTREK['countboost'] = 0;
+            $ARRTREK['countboost'] = 0; // Кол-во ордеров в противиположной части
+            $ARRTREK['countplus'] = 0;
             $this->ChangeARRinBD($ARRTREK, $TREK['id']);
         }
 
@@ -267,6 +271,8 @@ class WorkController extends AppController {
             // ВКЛЮЧАЕМ BOOST
             $countboost = 0;
             $countboost = R::count("orders", 'WHERE idtrek =? AND stat=?', [$TREK['id'], 2]);
+
+            //$countboost = $countboost*$this->compensator;
 
             // Отмена ордеров
             $this->CancelStopOrd($TREK);
@@ -516,8 +522,21 @@ class WorkController extends AppController {
                 // ОРДЕР ИСПОЛНЕН
 
 
+                // УБИВАЕТ ПОЗИЦИИ ПОКА ОНА НЕ ОКУПИЛАСЬ
                 // Сокращение убыточной позиции на единицу. Если такая есть
-                $this->ControlContrPosition($TREK);
+
+                $countplus = $TREK['countplus'] + 1;
+
+                // Если были плюсы, то сокращаем часть убыточной позиции и обновляем счетчик плюса
+                if ($countplus == $this->compensator){
+                    $this->ControlContrPosition($TREK);
+                    $countplus = 0;
+                }
+                $ARRTREK['countplus'] = $countplus;
+                $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+
+
+
 
 
 
@@ -584,7 +603,7 @@ class WorkController extends AppController {
 
         $side = $this->GetTextSide($TREK['workside']);
 
-        if ($LastOrder['boost'] == 1) $LastOrder['amount'] = $LastOrder['amount']*3;
+        if ($LastOrder['boost'] == 1) $LastOrder['amount'] = $LastOrder['amount']*$this->boostsize;
 
       //  $side = "buy";
         $order = $this->EXCHANGECCXT->create_order($this->symbol,"market",$side, $LastOrder['amount'], null, $params);
@@ -707,8 +726,8 @@ class WorkController extends AppController {
 
         echo "Средняя цена коридора:".$TREK['avg']."<br>";
 
-        if ($pricenow > ($TREK['rangeh'] + $TREK['step']) ) return "HIEND";
-        if ($pricenow < ($TREK['rangel'] - $TREK['step']) ) return "LOWEND";
+        if ($pricenow > ($TREK['rangeh'] + $TREK['step']*2) ) return "HIEND";
+        if ($pricenow < ($TREK['rangel'] - $TREK['step']*2) ) return "LOWEND";
 
 
         if ($pricenow > $TREK['avg'] ) return "LONG";
@@ -755,7 +774,7 @@ class WorkController extends AppController {
         show($OrderBD['price']);
 
         // Проверка на BOOST
-        if ($TREK['boost'] == 1) $OrderBD['amount'] = $OrderBD['amount']*3;
+        if ($TREK['boost'] == 1) $OrderBD['amount'] = $OrderBD['amount']*$this->boostsize;
         // Проверка на BOOST
 
 
