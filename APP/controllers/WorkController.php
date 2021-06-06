@@ -43,6 +43,8 @@ class WorkController extends AppController {
     private $skolz = 10; // Процент выше которого выставляется лимитник
     private $boostsize = 3; // На какое кол-во увеличиваеться ордер, если включен BOOST
     private $compensator = 3; // Количество плюсовых сделок. После которого закрывается часть противоположной позиции
+    private $coeff = 0.5; // Коэффицент на сколько удлинняется длинна шага при бусте
+
 
     // ТЕХНИЧЕСКИЕ ПЕРЕМЕННЫЕ
     public function indexAction()
@@ -436,11 +438,11 @@ class WorkController extends AppController {
 
                     if ($OrderBD['side'] == "long")  {
                         $price = $OrderREST['average'] + $TREK['step'];
-                         if ($TREK['boost'] == 1)  $price = $price + round($TREK['step']/2);
+                         if ($TREK['boost'] == 1)  $price = $price + round($TREK['step']*$this->coeff);
                     }
                     if ($OrderBD['side'] == "short")  {
                         $price = $OrderREST['average'] - $TREK['step'];
-                        if ($TREK['boost'] == 1)  $price = $price - round($TREK['step']/2);
+                        if ($TREK['boost'] == 1)  $price = $price - round($TREK['step']*$this->coeff);
                     }
 
 
