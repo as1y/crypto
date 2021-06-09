@@ -435,7 +435,7 @@ class WorkController extends AppController {
 
                     $count = $this->CountActiveOrders($TREK);
 
-                    if ($count > $this->maxposition){
+                    if ($count >= $this->maxposition){
 
                         echo "<b><font color='red'>ОРДЕР ЛИШНИЙ НАДО ОТМЕНЯТЬ</font></b>";
 
@@ -863,8 +863,8 @@ class WorkController extends AppController {
 
         echo "Средняя цена коридора:".$TREK['avg']."<br>";
 
-        if ($pricenow > ($TREK['rangeh'] + $TREK['step']*2) ) return "HIEND";
-        if ($pricenow < ($TREK['rangel'] - $TREK['step']*2) ) return "LOWEND";
+        if ($pricenow > ($TREK['rangeh'] + $TREK['step']) ) return "HIEND";
+        if ($pricenow < ($TREK['rangel'] - $TREK['step']) ) return "LOWEND";
 
 
         if ($pricenow > $TREK['avg'] ) return "LONG";
