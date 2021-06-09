@@ -22,7 +22,7 @@ class WorkController extends AppController {
     public $emailex  = "raskrutkaweb@yandex.ru"; // Сумма захода USD
     public $namebdex = "treks";
 
-    private $CENTER = 32000;
+    private $CENTER = 33100;
 
     private $CountOrders = 10; // Общее кол-во ордеров
 
@@ -45,6 +45,8 @@ class WorkController extends AppController {
     private $compensator = 10; // Количество плюсовых сделок. После которого закрывается часть противоположной позиции
     private $coeff = 0.5; // Коэффицент на сколько удлинняется длинна шага при бусте
     private $maxposition = 4; // Максимальный размер набираемый позиции
+    private $deepposition = 3; // Глубина ордеров после которых убивать позицию
+    private $timerestart = 5; // Через сколько перезапускать скрипт после остановки
 
     // ТЕХНИЧЕСКИЕ ПЕРЕМЕННЫЕ
     public function indexAction()
@@ -183,7 +185,7 @@ class WorkController extends AppController {
         $ARR['action'] = "ControlOrders";
         $ARR['boost'] = 0;
         $ARR['countboost'] = 0;
-        $ARR['countplus'] = 0;
+        $ARR['contrpoz'] = 0;
         $ARR['symbol'] = $this->symbol;
         $ARR['lever'] = $this->leverege;
         $ARR['count'] = $this->CountOrders;
@@ -256,10 +258,9 @@ class WorkController extends AppController {
 //        }
 
 
-
         if ($WorkSide == "HIEND" || $WorkSide == "LOWEND"){
             echo "<b><font color='#8b0000'>Цена вышла из коридора!!!</font></b>";
-            //$this->ControlExit($TREK);
+            $this->ControlExit($TREK);
             return true;
         }
 
@@ -274,24 +275,21 @@ class WorkController extends AppController {
             echo "<b>Переход из одной позиции в другую</b>";
 
             // ВКЛЮЧАЕМ BOOST
-            $countboost = 0;
+           // $countboost = 0;
           //  $countboost = R::count("orders", 'WHERE idtrek =? AND stat=?', [$TREK['id'], 2]);
             //$countboost = $countboost*$this->compensator;
             // Включаем BOOST
-            if ($countboost > 0) $ARRTREK['boost'] = 1;
+           // if ($countboost > 0) $ARRTREK['boost'] = 1;
 
 
-            // Отмена СТОП ордеров
-           // $this->CancelStopOrd($TREK);
+              $contrpoz = R::count("orders", 'WHERE idtrek =? AND stat=?', [$TREK['id'], 2]);
+              if ($contrpoz > 0) $contrpoz = 1;
+
+            // Закрытие позиции по стопу
+         //   $this->CloseStopPosition($TREK, $TREK['workside']);
 
 
-
-            // Закрытие позиции по стопу и отмена ордеров
-            $this->CloseStopPosition($TREK, $TREK['workside']);
-
-
-
-            $ARRTREK['countboost'] = $countboost;
+            $ARRTREK['contrpoz'] = $contrpoz;
             $ARRTREK['workside'] = $WorkSide;
             $this->ChangeARRinBD($ARRTREK, $TREK['id']);
 
@@ -322,8 +320,39 @@ class WorkController extends AppController {
 
         echo "<h1><font color='green'>КОРИДОР ЗАВЕРШИЛ РАБОТУ</font></h1>";
 
+        $timework = time() - $TREK['stamp'];
+        $minute = $timework/60;
+        echo "Время работы скрипта в минутах ".$minute."<br>";
 
 
+        if ($minute > $this->timerestart){
+
+            $pricenow = $this->GetPriceSide($this->symbol, $TREK['workside']);
+            $pricenow = round($pricenow);
+
+            $ARR = [];
+            $ARR['time'] = date("H:i:s");
+            $ARR['center'] = $TREK['center'];
+            $ARR['startb'] = $TREK['startbalance'];
+            $ARR['close'] = $this->BALANCE;
+            $this->AddARRinBD($ARR, "cycle");
+
+
+
+            // Перезапускаем ЦИКЛ
+            $this->CENTER = $pricenow;
+            R::wipe("treks");
+
+            // Удаляем ТРЕК
+
+
+        }
+
+
+
+
+
+        return true;
 
     }
 
@@ -335,12 +364,17 @@ class WorkController extends AppController {
         $OrdersBD = $this->GetOrdersBD($TREK);
 
 
+        // Проверка на глубину цены
+        // Проверяем кол-во выставленных ордеров. Если оно равно глубине, то закрываем контр позицию
+        $this->ControlDeepPosition($TREK, $pricenow);
+
+
 
 
         foreach ($OrdersBD as $key=>$OrderBD) {
 
             echo "<hr>";
-            echo "#".$OrderBD['id']." СТАТУС ОРДЕРА <b>".$OrderBD['stat']."</b> - ".$OrderBD['orderid']." - <b>".$OrderBD['side']."</b> <br>";
+            echo "#".$OrderBD['id']." СТАТУС ОРДЕРА <b>".$OrderBD['stat']."</b> - ".$OrderBD['orderid']." - <b>".$OrderBD['side']."</b> ".$OrderBD['count']." <br>";
 
 
             // Ордер на наращивание позиции
@@ -355,9 +389,10 @@ class WorkController extends AppController {
                         echo "Цена для выставления ордера".$OrderBD['price']."<br>";
 
 
+                        $count = $this->CountActiveOrders($TREK);
 
                         // Скоринг на выставление
-                        $resultscoring =  $this->CheckFirstOrder($TREK, $pricenow, $OrderBD);
+                        $resultscoring =  $this->CheckFirstOrder($TREK, $pricenow, $OrderBD, $count);
 
 
                         echo "Откупаем ордер по типу:<br>";
@@ -376,8 +411,7 @@ class WorkController extends AppController {
 
 
                         continue;
-                        // Проверяем на скоринг необходимости выставления ордера по маркету
-                    }
+                         }
 
 
 
@@ -398,8 +432,12 @@ class WorkController extends AppController {
                 // ОРДЕР НЕ ОТКУПИЛСЯ
                 if ($this->OrderControl($OrderREST) === FALSE){
                     echo "ОРДЕР не откупился <br>";
-                    $count = $this->CountStatus2($TREK);
-                    if ($count >= $this->maxposition){
+
+                    $count = $this->CountActiveOrders($TREK);
+
+                    if ($count > $this->maxposition){
+
+                        echo "<b><font color='red'>ОРДЕР ЛИШНИЙ НАДО ОТМЕНЯТЬ</font></b>";
 
                         // Отменяем ордер
                         $cancel = $this->EXCHANGECCXT->cancel_order($OrderBD['orderid'], $this->symbol);
@@ -407,40 +445,10 @@ class WorkController extends AppController {
 
                         $order['id'] = NULL;
                         $this->ChangeIDOrderBD($order, $OrderBD['id']);
+
+
                         continue;
                     }
-                    // Проверяем ордера MARKET на расстояние. Отменяем не актуальные
-//                    if ($TREK['workside'] == "LONG"){ // ЛОНГ
-//                        if ($pricenow < ($OrderBD['price'] - $TREK['step']*3) ){ // Если цена находиться ниже чем 3 шага от нужной цены, то отменяем ордер
-//
-//                            $params = [
-//                                'stop_order_id' => $OrderBD['orderid'],
-//                            ];
-//                            // Функция отмены стоп ордера
-//                            $this->EXCHANGECCXT->cancel_order($OrderBD['orderid'], $this->symbol,$params) ;
-//
-//                            $order['id'] = NULL;
-//                            $this->ChangeIDOrderBD($order, $OrderBD['id']);
-//
-//
-//                        }
-//                    } // ЛОНГ
-//                    if ($TREK['workside'] == "SHORT"){ // ЛОНГ
-//                        if ($pricenow > ($OrderBD['price'] + $TREK['step']*3) ){ // Если цена находиться выше чем 3 шага от нужной цены, то отменяем ордер
-//
-//                            $params = [
-//                                'stop_order_id' => $OrderBD['orderid'],
-//                            ];
-//                            // Функция отмены стоп ордера
-//                            $this->EXCHANGECCXT->cancel_order($OrderBD['orderid'], $this->symbol,$params) ;
-//
-//                            $order['id'] = NULL;
-//                            $this->ChangeIDOrderBD($order, $OrderBD['id']);
-//
-//
-//                        }
-//                    } // ЛОНГ
-
 
                     continue;
                 }
@@ -541,21 +549,6 @@ class WorkController extends AppController {
                 // ОРДЕР ИСПОЛНЕН
 
 
-                // УБИВАЕТ ПОЗИЦИИ ПОКА ОНА НЕ ОКУПИЛАСЬ
-                // Сокращение убыточной позиции на единицу. Если такая есть
-
-//                $countplus = $TREK['countplus'] + 1;
-//                // Если были плюсы, то сокращаем часть убыточной позиции и обновляем счетчик плюса
-//                if ($countplus == $this->compensator){
-//                    $this->ControlContrPosition($TREK);
-//                    $countplus = 0;
-//                }
-//                $ARRTREK['countplus'] = $countplus;
-//                $this->ChangeARRinBD($ARRTREK, $TREK['id']);
-
-
-
-
 
 
                 $this->AddTrackHistoryBD($TREK, $OrderBD, $OrderREST);
@@ -583,6 +576,36 @@ class WorkController extends AppController {
 
 
         return true;
+
+    }
+
+
+    private function ControlDeepPosition($TREK, $pricenow){
+
+        if ( $TREK['contrpoz'] == 0) return false;
+
+
+
+        echo  "<b>У нас имееться КОНТР-ПОЗИЦИЯ!</b><br><br>";
+        echo "Текущая цена: ".$pricenow."<br>";
+        if ($TREK['workside'] == "LONG" && $pricenow > $TREK['avg'] + $TREK['step']*$this->deepposition){
+            $contrside = ($TREK['workside'] == "LONG") ? "short" : "long";
+            $this->CloseStopPosition($TREK, $contrside);
+            $ARRTREK['contrpoz'] = 0;
+            $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+            echo "Позиция зашла дальше глубины. <br>";
+        }
+
+        if ($TREK['workside'] == "SHORT" && $pricenow < $TREK['avg'] - $TREK['step']*$this->deepposition){
+            $contrside = ($TREK['workside'] == "LONG") ? "short" : "long";
+            $this->CloseStopPosition($TREK, $contrside);
+            $ARRTREK['contrpoz'] = 0;
+            $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+            echo "Позиция зашла дальше глубины. <br>";
+        }
+
+        return true;
+
 
     }
 
@@ -686,6 +709,7 @@ class WorkController extends AppController {
 
         // Смена Статуса
         $ARRTREK['status'] = 2;
+        $ARRTREK['stamp'] = time();
         $this->ChangeARRinBD($ARRTREK, $TREK['id']);
 
         echo "<h3><font color='green'>ЦИКЛ ЗАВЕРШЕН!!!</font> </h3>";
@@ -701,7 +725,7 @@ class WorkController extends AppController {
             'reduce_only' => true,
         ];
 
-        if ($side == "LONG" && $POSITION[0]['size'] > 0){
+        if ($side == "long" && $POSITION[0]['size'] > 0){
             echo "Закрытие остатков LONG позиции<br>";
             $order = $this->EXCHANGECCXT->create_order($this->symbol,"market","sell", $POSITION[0]['size'], null, $param);
             show($order);
@@ -714,7 +738,7 @@ class WorkController extends AppController {
 
         }
 
-        if ($side == "SHORT" && $POSITION[1]['size'] > 0){
+        if ($side == "short" && $POSITION[1]['size'] > 0){
             echo "Закрытие остатков SHORT позиции<br>";
             $order = $this->EXCHANGECCXT->create_order($this->symbol,"market","buy", $POSITION[1]['size'], null, $param);
             show($order);
@@ -729,7 +753,7 @@ class WorkController extends AppController {
 
 
         // Отмена закрывающих ордеров
-        $OrdersBD = R::findAll("orders", 'WHERE idtrek =? AND side=?', [$TREK['id'], $TREK['workside']]);
+        $OrdersBD = R::findAll("orders", 'WHERE idtrek =? AND side=?', [$TREK['id'], $side]);
 
         foreach ($OrdersBD as $key=>$ORD){
 
@@ -753,13 +777,12 @@ class WorkController extends AppController {
     }
 
 
-    private function CheckFirstOrder($TREK, $pricenow, $OrderBD){
+    private function CheckFirstOrder($TREK, $pricenow, $OrderBD, $count){
 
 
         $STEP = ($TREK['step']/100)*$this->skolz;
         $STEP = round($STEP);
 
-        $count = $this->CountStatus2($TREK);
 
         if ($count >= $this->maxposition) {
             echo "Достигнут лимит максимальных кол-ва ордеров<br>";
@@ -847,41 +870,6 @@ class WorkController extends AppController {
         if ($pricenow > $TREK['avg'] ) return "LONG";
          if ($pricenow < $TREK['avg'] ) return "SHORT";
 
-
-
-    }
-
-    private function CancelStopOrd($TREK){
-
-
-        echo "Отмена стоп ордеров при переходе <br>";
-
-        // Отмена стоп ордеров
-        $OrdersBD = R::findAll("orders", 'WHERE idtrek =? AND side=? AND stat=?', [$TREK['id'], $TREK['workside'], 1]);
-
-        foreach ($OrdersBD as $key=>$ORD){
-
-            if ($ORD['orderid'] == NULL) continue;
-
-            $params = [
-                'stop_order_id' => $ORD['orderid'],
-            ];
-            // Функция отмены стоп ордера
-            $this->EXCHANGECCXT->cancel_order($ORD['orderid'], $this->symbol,$params) ;
-            $ORD->orderid = NULL;
-            $ORD->first = 1;
-            R::store($ORD);
-
-
-        }
-
-        // очищене обычных ордеров
-
-
-
-
-
-            return true;
 
 
     }
@@ -1020,9 +1008,11 @@ class WorkController extends AppController {
 
 
 
-    private function CountStatus2($TREK){
+    private function CountActiveOrders($TREK, $stat = 2){
 
-        $count = R::count("orders", 'WHERE idtrek =? AND side=? AND stat=?', [$TREK['id'], $TREK['workside'], 2]);
+
+        $count = R::count("orders", 'WHERE idtrek =? AND side=? AND stat=? AND orderid IS NOT NULL', [$TREK['id'], $TREK['workside'], $stat]);
+        echo "Активных ордеров: ".$count."<br>";
 
         return $count;
     }
@@ -1180,7 +1170,8 @@ class WorkController extends AppController {
 
     private function GetOrdersBD($TREK)
     {
-        $MASS = R::findAll("orders", 'WHERE idtrek =? AND side=?', [$TREK['id'], $TREK['workside']]);
+
+        $MASS = R::findAll("orders", 'WHERE idtrek =? AND side=? ORDER by `count` ASC', [$TREK['id'], $TREK['workside']]);
         return $MASS;
     }
 
