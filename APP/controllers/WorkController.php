@@ -22,7 +22,7 @@ class WorkController extends AppController {
     public $emailex  = "raskrutkaweb@yandex.ru"; // Сумма захода USD
     public $namebdex = "treks";
 
-    private $CENTER = 33100;
+    private $CENTER = ""; // Если значение пустое, то центр будет определяться автоматом при старте
 
     private $CountOrders = 10; // Общее кол-во ордеров
 
@@ -145,6 +145,8 @@ class WorkController extends AppController {
 
         $pricenow = $this->GetPriceSide($this->symbol, "long");
 
+        if ($this->CENTER == "")  $this->CENTER = round($pricenow);
+
 
 
         echo "Рассчет ордеров<br>";
@@ -196,7 +198,7 @@ class WorkController extends AppController {
         $ARR['minst'] = $this->minst;
         $ARR['workside'] = "LONG";
         $ARR['startbalance'] = $this->BALANCE;
-        $ARR['date'] = date("h:i:s");
+        $ARR['date'] = date("H:i:s");
         $ARR['stamp'] = time();
 
         $idtrek = $this->AddARRinBD($ARR);
@@ -320,27 +322,40 @@ class WorkController extends AppController {
 
         echo "<h1><font color='green'>КОРИДОР ЗАВЕРШИЛ РАБОТУ</font></h1>";
 
-        $timework = time() - $TREK['stamp'];
+        $timework = time() - $TREK['stampexit'];
         $minute = $timework/60;
-        echo "Время работы скрипта в минутах ".$minute."<br>";
+        echo "Время ожидания после закрытия ".$minute."<br>";
+
+        $timealltrack = time() - $TREK['stamp'];
+        $minutetrek = $timealltrack/60;
+        echo "Время работы всего скрипта ".$minutetrek."<br>";
 
 
-        if ($minute > $this->timerestart){
+        if ($minute > $this->timerestart && $this->CENTER == ""){
 
-            $pricenow = $this->GetPriceSide($this->symbol, $TREK['workside']);
-            $pricenow = round($pricenow);
+            $ACTBAL = $this->GetBal()['USDT']['total'];
+            $profit = $ACTBAL - $TREK['startbalance'];
+
+
+//            if ($profit < -1) {
+//                echo "Сработали в минус. Ждем анализа!";
+//                return true;
+//            }
+
 
             $ARR = [];
-            $ARR['time'] = date("H:i:s");
-            $ARR['center'] = $TREK['center'];
-            $ARR['startb'] = $TREK['startbalance'];
-            $ARR['close'] = $this->BALANCE;
+            $ARR['timestart'] = $TREK['date'];
+            $ARR['timeclose'] = date("H:i:s");
+            $ARR['minutework'] = $minutetrek;
+            $ARR['center'] = $TREK['avg'];
+            $ARR['startbalance'] = $TREK['startbalance'];
+            $ARR['close'] = $ACTBAL;
+            $ARR['profit'] = $profit;
             $this->AddARRinBD($ARR, "cycle");
 
 
 
             // Перезапускаем ЦИКЛ
-            $this->CENTER = $pricenow;
             R::wipe("treks");
 
             // Удаляем ТРЕК
@@ -609,71 +624,6 @@ class WorkController extends AppController {
 
     }
 
-    private function ControlContrPosition($TREK){
-
-        $contrside = ($TREK['workside'] == "LONG") ? "short" : "long";
-        echo "Противоположный статус:<br>";
-        show($contrside);
-
-        $LastOrder = false;
-
-        if ($contrside == "long"){
-            $LastOrder = R::findOne("orders", 'WHERE idtrek =? AND side=? AND stat=? ORDER by `price` DESC', [$TREK['id'], $contrside, 2]);
-        }
-        // Получение ордеров из CONTR позиции
-        if ($contrside == "short"){
-            $LastOrder = R::findOne("orders", 'WHERE idtrek =? AND side=? AND stat=? ORDER by `price` ASC', [$TREK['id'], $contrside, 2]);
-        }
-
-
-        if ($LastOrder == false){
-            echo "Убыточной позиции не обнаружено";
-            return true;
-        }
-
-
-        echo "Локализацием нижний ордер<br>";
-
-
-
-
-        // Закрываем позицию убыточную
-        $params = [
-            'reduce_only' => true,
-        ];
-
-        $side = $this->GetTextSide($TREK['workside']);
-
-        if ($LastOrder['boost'] == 1) $LastOrder['amount'] = $LastOrder['amount']*$this->boostsize;
-
-      //  $side = "buy";
-        $order = $this->EXCHANGECCXT->create_order($this->symbol,"market",$side, $LastOrder['amount'], null, $params);
-        show($order);
-
-        // Обнуляем его положение в БД
-        $changeorder = R::load("orders", $LastOrder['id']);
-        $changeorder->stat = 1;
-        $changeorder->orderid = NULL;
-        R::store($changeorder);
-        // Берем противоположные ордера со статусом два
-
-
-        // Отменяем крайний лимитный ордер
-  //      $cancel = $this->EXCHANGECCXT->cancel_order($LastOrder['orderid'], $this->symbol);
-//        show($cancel);
-
-        echo "<b><font color='#8b0000'>Позиция сокращена на 1 единицу</font></b><br>";
-
-        $srez = 1;
-        $this->AddTrackHistoryBD($TREK, $LastOrder, $order, $srez);
-
-
-
-        return true;
-
-
-    }
-
     private function ControlExit($TREK){
 
         $POSITION = $this->LookHPosition();
@@ -709,7 +659,7 @@ class WorkController extends AppController {
 
         // Смена Статуса
         $ARRTREK['status'] = 2;
-        $ARRTREK['stamp'] = time();
+        $ARRTREK['stampexit'] = time();
         $this->ChangeARRinBD($ARRTREK, $TREK['id']);
 
         echo "<h3><font color='green'>ЦИКЛ ЗАВЕРШЕН!!!</font> </h3>";
@@ -1010,8 +960,15 @@ class WorkController extends AppController {
 
     private function CountActiveOrders($TREK, $stat = 2){
 
+        $count = 0;
+        if ($stat == 1 ||$stat == 2 ){
+            $count = R::count("orders", 'WHERE idtrek =? AND side=? AND stat=? AND orderid IS NOT NULL', [$TREK['id'], $TREK['workside'], $stat]);
+        }
 
-        $count = R::count("orders", 'WHERE idtrek =? AND side=? AND stat=? AND orderid IS NOT NULL', [$TREK['id'], $TREK['workside'], $stat]);
+        if ($stat == "all"){
+            $count = R::count("orders", 'WHERE idtrek =? AND side=? AND orderid IS NOT NULL', [$TREK['id'], $TREK['workside']]);
+        }
+
         echo "Активных ордеров: ".$count."<br>";
 
         return $count;
