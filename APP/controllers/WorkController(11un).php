@@ -39,7 +39,7 @@ class WorkController extends AppController {
 
 
     // Переменные для стратегии
-    private $minst = 0.2; // Коэфицент минимального шага
+    private $minst = 0.17; // Коэфицент минимального шага
 
     private $skolz = 10; // Процент выше которого выставляется лимитник
 
@@ -47,8 +47,12 @@ class WorkController extends AppController {
 
     private $coeff = 0.5; // Коэффицент на сколько удлинняется длинна шага при бусте
     private $maxposition = 4; // Максимальный размер набираемый позиции
- 
-    private $stopfix = 6;
+
+
+    private $deepposition = 3; // Глубина ордеров после которых убивать позицию при ПЕРЕХОДЕ ЧЕРЕЗ 0
+    private $stopfixorder = 4; // Глубина при которой закрывается позиция при уходе вниз
+
+    private $stopfix = 5;
 
     private $timerestart = 2; // Через сколько перезапускать скрипт после остановки
 
@@ -210,8 +214,7 @@ class WorkController extends AppController {
         $ARR['rangel'] = $rangel;
         $ARR['avg'] = $this->CENTER;
         $ARR['minst'] = $this->minst;
-        $ARR['stopfix'] = $this->stopfix;
-        $ARR['countplus'] = 0;
+        $ARR['countstop'] = $this->stopfix;
         $ARR['workside'] = "LONG";
         $ARR['startbalance'] = $this->BALANCE;
         $ARR['date'] = date("H:i:s");
@@ -316,13 +319,15 @@ class WorkController extends AppController {
 
         // Проверка на глубину цены
         // Проверяем кол-во выставленных ордеров. Если оно равно глубине, то закрываем контр позицию
+        $this->ControlDeepPosition($TREK, $pricenow);
 
+
+        // Работа с Тейк профитом на весь цикл
+        $this->ControlTakeProfitCycle($TREK, $pricenow);
 
          $countminus =  $this->GlobalStop($TREK, $pricenow);
          echo "<b>Цикл в минусе на </b>: <b>".$countminus."</b> пунктов<br>";
-         if ($countminus >= $this->stopfix){
-            $this->CloseCycle($TREK);
-         }
+
 
 
         // Статус ордера - ОРДЕРА на НАРАЩИВАНИЕ ПОЗИЦИИ
@@ -366,9 +371,7 @@ class WorkController extends AppController {
             $ARR['startbalance'] = $TREK['startbalance'];
             $ARR['close'] = $ACTBAL;
             $ARR['profit'] = $profit;
-            $ARR['countplus'] = $TREK['countplus'];
             $ARR['minst'] = $TREK['minst'];
-            $ARR['stopfix'] = $TREK['stopfix'];
             $ARR['stop'] = $TREK['stop'];
             $ARR['rsi'] = $SCORING['RSI'];
             $ARR['korsize'] = $SCORING['KORSIZE'];
@@ -586,11 +589,9 @@ class WorkController extends AppController {
 
 
 
-                $this->AddTrackHistoryBD($TREK, $OrderBD, $OrderREST);
 
-                $countplus = $TREK['countplus'] + 1;
-                $ARRTREK['countplus'] = $countplus;
-                $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+
+                $this->AddTrackHistoryBD($TREK, $OrderBD, $OrderREST);
 
 
                 $ARRCHANGE = [];
@@ -618,6 +619,39 @@ class WorkController extends AppController {
 
     }
 
+
+
+    // Закрытие части позиции
+    private function ControlStopOrder2($TREK, $pricenow, $OrderBD){
+        echo "<b>Проверяем ордер на вторую часть</b><br>";
+
+
+        $contrside = ($TREK['workside'] == "LONG") ? "short" : "long";
+
+        if ($TREK['workside'] == "LONG" && $pricenow < $OrderBD['price'] - $TREK['step']*$this->stopfixorder){
+
+            // Режем текущую позицию на единицу!
+            echo "<font color='#8b0000'><b>Цена в ЗОНЕ STOP</b></font>";
+            $this->Close1StepPosition($TREK, $OrderBD, $contrside);
+
+            return true;
+        }
+
+
+        if ($TREK['workside'] == "SHORT" && $pricenow > $OrderBD['price'] + $TREK['step']*$this->stopfixorder){
+            // Режем текущую позицию на единицу!
+            echo "<font color='#8b0000'><b>Цена в ЗОНЕ STOP</b></font>";
+            $this->Close1StepPosition($TREK, $OrderBD, $contrside);
+            return true;
+
+        }
+
+
+
+            echo "Цена в допустимой зоне<br>";
+
+        return true;
+    }
 
 
     private function GlobalStop($TREK, $pricenow){
@@ -662,6 +696,35 @@ class WorkController extends AppController {
 
 
 
+    // Закрытие Противоположной позиции по глубине
+    private function ControlDeepPosition($TREK, $pricenow){
+
+        if ( $TREK['contrpoz'] == 0) return false;
+
+        echo  "<b>У нас имееться КОНТР-ПОЗИЦИЯ!</b><br><br>";
+        echo "Текущая цена: ".$pricenow."<br>";
+
+        if ($TREK['workside'] == "LONG" && $pricenow > $TREK['avg'] + $TREK['step']*$this->deepposition){
+            $contrside = ($TREK['workside'] == "LONG") ? "short" : "long";
+            $this->CloseStopPosition($TREK, $contrside);
+            $ARRTREK['contrpoz'] = 0;
+            $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+            echo "Позиция зашла дальше глубины. <br>";
+        }
+
+
+        if ($TREK['workside'] == "SHORT" && $pricenow < $TREK['avg'] - $TREK['step']*$this->deepposition){
+            $contrside = ($TREK['workside'] == "LONG") ? "short" : "long";
+            $this->CloseStopPosition($TREK, $contrside);
+            $ARRTREK['contrpoz'] = 0;
+            $this->ChangeARRinBD($ARRTREK, $TREK['id']);
+            echo "Позиция зашла дальше глубины. <br>";
+        }
+
+        return true;
+
+
+    }
 
     private function Close1StepPosition($TREK, $OrderBD, $side){
 
@@ -695,6 +758,45 @@ class WorkController extends AppController {
 
 
         return true;
+    }
+
+
+    private function ControlTakeProfitCycle($TREK, $pricenow){
+
+        $count = $this->CpuntHiOrders($TREK);
+
+
+        // Закрываем ЦИКЛ!
+        if ($count < $this->stopfixorder ){
+            echo "Позиция в цикле в допустимом диапозоне<br>";
+            return true;
+        }
+
+
+        if ($TREK['workside'] == "LONG" && $pricenow < $TREK['rangeh'] - ($TREK['step']*$this->stopfixorder) + 1){
+            echo "<font color='#8b0000'><b>Цена в ЗОНЕ STOP</b></font>";
+            $stop = 1;
+            // Закрываем позицию!!
+            $this->CloseCycle($TREK, $stop);
+            return true;
+
+        }
+
+        if ($TREK['workside'] == "SHORT" && $pricenow > $TREK['rangel'] + ($TREK['step']*$this->stopfixorder) +1){
+            echo "<font color='#8b0000'><b>Цена в ЗОНЕ STOP</b></font>";
+            $stop = 1;
+            // Закрываем позицию!!
+            $this->CloseCycle($TREK, $stop);
+            return true;
+
+        }
+
+
+        return false;
+
+
+
+
     }
 
 
@@ -742,6 +844,64 @@ class WorkController extends AppController {
         return true;
     }
 
+
+    private function CloseStopPosition($TREK, $side){
+
+        $POSITION = $this->LookHPosition();
+        $param = [
+            'reduce_only' => true,
+        ];
+
+        if ($side == "long" && $POSITION[0]['size'] > 0){
+            echo "Закрытие остатков LONG позиции<br>";
+            $order = $this->EXCHANGECCXT->create_order($this->symbol,"market","sell", $POSITION[0]['size'], null, $param);
+            show($order);
+
+            $LastOrder = [
+            ];
+            $srez = 1;
+            $this->AddTrackHistoryBD($TREK, $LastOrder, $order, $srez);
+
+
+        }
+
+        if ($side == "short" && $POSITION[1]['size'] > 0){
+            echo "Закрытие остатков SHORT позиции<br>";
+            $order = $this->EXCHANGECCXT->create_order($this->symbol,"market","buy", $POSITION[1]['size'], null, $param);
+            show($order);
+
+            $LastOrder = [
+            ];
+            $srez = 1;
+            $this->AddTrackHistoryBD($TREK, $LastOrder, $order, $srez);
+
+
+        }
+
+
+        // Отмена закрывающих ордеров
+        $OrdersBD = R::findAll("orders", 'WHERE idtrek =? AND side=?', [$TREK['id'], $side]);
+
+        foreach ($OrdersBD as $key=>$ORD){
+
+            if ($ORD['orderid'] == NULL) continue;
+
+            // Функция отмены стоп ордера
+         //   $this->EXCHANGECCXT->cancel_order($ORD['orderid'], $this->symbol) ;
+            $ORD->orderid = NULL;
+            $ORD->stat = 1;
+            $ORD->first = 1;
+            R::store($ORD);
+
+        }
+
+
+
+
+
+        return true;
+
+    }
 
 
     private function CheckFirstOrder($TREK, $pricenow, $OrderBD, $count){
@@ -941,6 +1101,23 @@ class WorkController extends AppController {
     }
 
 
+    private function CpuntHiOrders($TREK, $stat = 2){
+
+        $Orders = R::findAll("orders", 'WHERE idtrek =? AND side=? ORDER by `count` DESC LIMIT 8 ', [$TREK['id'], $TREK['workside']]);
+
+        $count = 0;
+
+        foreach ($Orders as $key=>$val){
+            if ($val['stat'] == 2) $count = $count+1;
+        }
+
+        echo "Кол-во верхних ордеров: ".$count." <br>";
+
+
+
+        return $count;
+
+    }
 
     private function CountActiveOrders($TREK, $stat = 2){
 

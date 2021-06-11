@@ -70,55 +70,9 @@ class PanelController extends AppController {
 
         $this->FULLBALANCE = $this->GetBal();
 
-        $TREKS = $this->GetTreksBD();
+        //   show($this->FULLBALANCE);
 
-
-        foreach ($TREKS as $TREK) {
-
-            $this->ORDERBOOK = $this->GetOrderBook($TREK['symbol']);
-
-            $POSITION = $this->Looking4Position($TREK['symbol']);
-
-
-            if (empty($POSITION['position'])) continue;
-
-            $ARRPOS = $this->GetARRPOS($POSITION, $TREK);
-//           show($ARRPOS);
-
-            $timeposition = $this->CalculateHoldMin($TREK['stamp']);
-
-            echo "<H2>ВВОДНАЯ ПО ТРЕКУ </H2>";
-            echo "<b> Последний запуск трека: </b> ".$TREK['lastrun']."<br>";
-            echo "<b> Время работы трека: </b> ".$timeposition."<br>";
-
-            echo "<b> HIGH: </b> ".$TREK['rangeh']."<br>";
-            echo "<b> LOW: </b> ".$TREK['rangel']."<br>";
-            echo "<hr>";
-
-            echo "<h2>ПОЗИЦИЯ</h2>";
-
-            if ($ARRPOS['enter'] != 0){
-                echo "Текущая цена актива ".$this->GetPriceSide($TREK['symbol'], $TREK['side'])."<br>";
-                echo "Точка входа ".$ARRPOS['enter']." <br>";
-                echo "<b>Разница </b>".$ARRPOS['raznica']." <br>";
-            } else{
-                echo  "Позиция отсутсвует";
-            }
-
-            echo "<hr>";
-
-
-        }
-
-
-     //   show($this->FULLBALANCE);
-
-
-
-        $allprofit = $this->AllProfit();
-        show($allprofit);
-
-
+        exit("11");
 
         // Контроллер позиции
 
@@ -127,6 +81,23 @@ class PanelController extends AppController {
         $this->set(compact(''));
 
     }
+
+
+
+    public function GetScoring(){
+        $SCORING = [];
+
+
+        return $SCORING;
+
+    }
+
+
+
+
+
+
+
 
     public function GetBal(){
         $balance = $this->EXCHANGECCXT->fetch_balance();
