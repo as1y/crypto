@@ -42,7 +42,6 @@ class WorkController extends AppController {
     private $minst = 0.17; // Коэфицент минимального шага
     private $skolz = 10; // Процент выше которого выставляется лимитник
     private $boostsize = 3; // На какое кол-во увеличиваеться ордер, если включен BOOST
-    private $compensator = 10; // Количество плюсовых сделок. После которого закрывается часть противоположной позиции
     private $coeff = 0.5; // Коэффицент на сколько удлинняется длинна шага при бусте
 
 
@@ -466,16 +465,6 @@ class WorkController extends AppController {
                     $this->AddTrackHistoryBD($TREK, $OrderBD, $OrderREST);
 
 
-                // Сокращаем счетчик BOOST
-                if ($TREK['boost'] == 1 && $TREK['countboost'] > 0){
-                    $countboost = $TREK['countboost'] - 1;
-                    $ARRTREK['countboost'] = $countboost;
-                    $this->ChangeARRinBD($ARRTREK, $TREK['id']);
-                }
-                // Сокращаем счетчик BOOST
-
-
-
                     $ARRCHANGE = [];
                     $ARRCHANGE['stat'] = 2;
                     $ARRCHANGE['orderid'] = $order['id'];
@@ -530,20 +519,6 @@ class WorkController extends AppController {
 
 
                 // ОРДЕР ИСПОЛНЕН
-
-
-                // УБИВАЕТ ПОЗИЦИИ ПОКА ОНА НЕ ОКУПИЛАСЬ
-                // Сокращение убыточной позиции на единицу. Если такая есть
-
-//                $countplus = $TREK['countplus'] + 1;
-//                // Если были плюсы, то сокращаем часть убыточной позиции и обновляем счетчик плюса
-//                if ($countplus == $this->compensator){
-//                    $this->ControlContrPosition($TREK);
-//                    $countplus = 0;
-//                }
-//                $ARRTREK['countplus'] = $countplus;
-//                $this->ChangeARRinBD($ARRTREK, $TREK['id']);
-
 
 
 
@@ -753,8 +728,6 @@ class WorkController extends AppController {
 
         if ($TREK['workside'] == "LONG"){
 
-          //  if ($pricenow > $OrderBD['price'] + $STEP) return "LIMIT";
-
           if ($OrderBD['first'] == 1){
 
               if ($pricenow < $OrderBD['price']){
@@ -763,7 +736,6 @@ class WorkController extends AppController {
               }
 
           }
-
             if ($OrderBD['first'] == 0){
                 if ($pricenow < $OrderBD['price']){
                     // Приближаемся к зоне покупки
@@ -772,30 +744,16 @@ class WorkController extends AppController {
 
                 }
             }
-
-
-
-
-
         }
-
-
         if ($TREK['workside'] == "SHORT"){
 
-
-            //if ($pricenow < $OrderBD['price'] - $STEP) return "LIMIT";
-
-
             if ($OrderBD['first'] == 1){
-
                 if ($pricenow > $OrderBD['price']){
                     // Приближаемся к зоне покупки
                     if ($pricenow < ($OrderBD['price'] + $TREK['step']*3) ) return "MARKET";
                 }
 
             }
-
-
 
             if ($OrderBD['first'] == 0){
                 echo "НОВЫЙ ОРДЕР<br>";
@@ -812,12 +770,8 @@ class WorkController extends AppController {
                 }
             }
 
-
-
-
-
-
         }
+
 
             echo "Цена не корректна для выставления ордеров в данном коридоре<br>";
             return false;
