@@ -1183,7 +1183,7 @@ class WorkController extends AppController {
 
 
         $zahod = round($allbal/$this->CountOrders);
-      
+
         if ($zahod < 30){
             echo "Размер захода на 1 ордер".$zahod."<br>";
             echo "Не хватает баланса на такое кол-во ордеров";
